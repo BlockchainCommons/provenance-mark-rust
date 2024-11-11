@@ -1,4 +1,4 @@
-use rand_core::{impls::fill_bytes_via_next, le::read_u64_into, Error, RngCore};
+use rand_core::{ impls::fill_bytes_via_next, le::read_u64_into, Error, RngCore };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Xoshiro256StarStar {
@@ -42,7 +42,7 @@ impl Xoshiro256StarStar {
 macro_rules! starstar_u64 {
     ($x:expr) => {
         $x.wrapping_mul(5).rotate_left(7).wrapping_mul(9)
-    }
+    };
 }
 
 macro_rules! impl_xoshiro_u64 {
@@ -57,7 +57,7 @@ macro_rules! impl_xoshiro_u64 {
         $self.s[2] ^= t;
 
         $self.s[3] = $self.s[3].rotate_left(45);
-    }
+    };
 }
 
 impl RngCore for Xoshiro256StarStar {
@@ -104,7 +104,9 @@ mod tests {
 
     #[test]
     fn test_save_rng_state() {
-        let state: [u64; 4] = [17295166580085024720, 422929670265678780, 5577237070365765850, 7953171132032326923];
+        let state: [u64; 4] = [
+            17295166580085024720, 422929670265678780, 5577237070365765850, 7953171132032326923,
+        ];
         let data = Xoshiro256StarStar::from_state(&state).to_data();
         assert_eq!(data, hex!("d0e72cf15ec604f0bcab28594b8cde05dab04ae79053664d0b9dadc201575f6e"));
         let state2 = Xoshiro256StarStar::from_data(&data).to_state();

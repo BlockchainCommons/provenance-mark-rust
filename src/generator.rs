@@ -3,7 +3,7 @@ use dcbor::{ CBOREncodable, Date };
 use serde::{ Serialize, Deserialize };
 use crate::util::{ serialize_base64, deserialize_base64 };
 
-use crate::{ProvenanceSeed, RngState};
+use crate::{ ProvenanceSeed, RngState };
 use crate::{
     crypto_utils::extend_key,
     xoshiro256starstar::Xoshiro256StarStar,
@@ -36,10 +36,7 @@ impl ProvenanceMarkGenerator {
         Self::new_with_seed(res, seed)
     }
 
-    pub fn new_using(
-        res: ProvenanceMarkResolution,
-        rng: &mut impl RandomNumberGenerator
-    ) -> Self {
+    pub fn new_using(res: ProvenanceMarkResolution, rng: &mut impl RandomNumberGenerator) -> Self {
         let seed = ProvenanceSeed::new_using(rng);
         Self::new_with_seed(res, seed)
     }

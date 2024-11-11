@@ -5,8 +5,10 @@ pub const RNG_STATE_LENGTH: usize = 32;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RngState(
-    #[serde(serialize_with = "serialize_block", deserialize_with = "deserialize_block")]
-    [u8; RNG_STATE_LENGTH]
+    #[serde(serialize_with = "serialize_block", deserialize_with = "deserialize_block")] [
+        u8;
+        RNG_STATE_LENGTH
+    ],
 );
 
 impl RngState {

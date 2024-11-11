@@ -3,7 +3,14 @@ use bc_ur::bytewords;
 use dcbor::{ prelude::*, Date };
 use url::Url;
 use serde::{ Serialize, Deserialize };
-use crate::util::{ serialize_iso8601, deserialize_iso8601, serialize_base64, deserialize_base64, serialize_cbor, deserialize_cbor };
+use crate::util::{
+    serialize_iso8601,
+    deserialize_iso8601,
+    serialize_base64,
+    deserialize_base64,
+    serialize_cbor,
+    deserialize_cbor,
+};
 
 use crate::{ crypto_utils::{ obfuscate, sha256, sha256_prefix }, ProvenanceMarkResolution };
 use anyhow::{ bail, Result, Error };
@@ -40,10 +47,7 @@ pub struct ProvenanceMark {
 }
 
 impl<'de> Deserialize<'de> for ProvenanceMark {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
         #[derive(Deserialize)]
         struct ProvenanceMarkHelper {
             res: ProvenanceMarkResolution,
@@ -62,7 +66,9 @@ impl<'de> Deserialize<'de> for ProvenanceMark {
 
         let helper = ProvenanceMarkHelper::deserialize(deserializer)?;
         let seq_bytes = helper.res.serialize_seq(helper.seq).map_err(serde::de::Error::custom)?;
-        let date_bytes = helper.res.serialize_date(helper.date.clone()).map_err(serde::de::Error::custom)?;
+        let date_bytes = helper.res
+            .serialize_date(helper.date.clone())
+            .map_err(serde::de::Error::custom)?;
 
         Ok(ProvenanceMark {
             res: helper.res,
@@ -358,7 +364,7 @@ impl std::fmt::Display for ProvenanceMark {
             format!("hash: {}", hex::encode(&self.hash)),
             format!("chainID: {}", hex::encode(&self.chain_id)),
             format!("seq: {}", self.seq),
-            format!("date: {}", self.date.to_string()),
+            format!("date: {}", self.date.to_string())
         ];
 
         if let Some(info) = self.info() {
@@ -385,10 +391,7 @@ impl From<ProvenanceMark> for CBOR {
 
 impl CBORTaggedEncodable for ProvenanceMark {
     fn untagged_cbor(&self) -> CBOR {
-        vec![
-            self.res.to_cbor(),
-            CBOR::to_byte_string(self.message())
-        ].to_cbor()
+        vec![self.res.to_cbor(), CBOR::to_byte_string(self.message())].to_cbor()
     }
 }
 

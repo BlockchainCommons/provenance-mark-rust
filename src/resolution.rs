@@ -1,8 +1,8 @@
-use std::ops::{Range, RangeFrom};
+use std::ops::{ Range, RangeFrom };
 
-use dcbor::{prelude::*, Date};
-use anyhow::{Result, bail, Error};
-use serde::{Deserialize, Serialize};
+use dcbor::{ prelude::*, Date };
+use anyhow::{ Result, bail, Error };
+use serde::{ Deserialize, Serialize };
 use std::convert::TryFrom;
 
 use crate::date::SerializableDate;
@@ -103,12 +103,29 @@ impl ProvenanceMarkResolution {
         self.link_length() * 3 + self.seq_bytes_length() + self.date_bytes_length()
     }
 
-    pub fn key_range(&self) -> Range<usize> { 0..self.link_length() }
-    pub fn chain_id_range(&self) -> Range<usize> { 0..self.link_length() }
-    pub fn hash_range(&self) -> Range<usize> { self.chain_id_range().end..self.chain_id_range().end + self.link_length() }
-    pub fn seq_bytes_range(&self) -> Range<usize> { self.hash_range().end..self.hash_range().end + self.seq_bytes_length() }
-    pub fn date_bytes_range(&self) -> Range<usize> { self.seq_bytes_range().end..self.seq_bytes_range().end + self.date_bytes_length() }
-    pub fn info_range(&self) -> RangeFrom<usize> { self.date_bytes_range().end.. }
+    pub fn key_range(&self) -> Range<usize> {
+        0..self.link_length()
+    }
+    
+    pub fn chain_id_range(&self) -> Range<usize> {
+        0..self.link_length()
+    }
+
+    pub fn hash_range(&self) -> Range<usize> {
+        self.chain_id_range().end..self.chain_id_range().end + self.link_length()
+    }
+
+    pub fn seq_bytes_range(&self) -> Range<usize> {
+        self.hash_range().end..self.hash_range().end + self.seq_bytes_length()
+    }
+
+    pub fn date_bytes_range(&self) -> Range<usize> {
+        self.seq_bytes_range().end..self.seq_bytes_range().end + self.date_bytes_length()
+    }
+
+    pub fn info_range(&self) -> RangeFrom<usize> {
+        self.date_bytes_range().end..
+    }
 
     /// Serializes a Date into bytes based on the resolution.
     pub fn serialize_date(&self, date: Date) -> Result<Vec<u8>> {
@@ -123,8 +140,10 @@ impl ProvenanceMarkResolution {
     pub fn deserialize_date(&self, data: &[u8]) -> Result<Date> {
         match self {
             Res::Low if data.len() == 2 => Date::deserialize_2_bytes(&[data[0], data[1]]),
-            Res::Medium if data.len() == 4 => Date::deserialize_4_bytes(&[data[0], data[1], data[2], data[3]]),
-            Res::Quartile | Res::High if data.len() == 6 => Date::deserialize_6_bytes(&[data[0], data[1], data[2], data[3], data[4], data[5]]),
+            Res::Medium if data.len() == 4 =>
+                Date::deserialize_4_bytes(&[data[0], data[1], data[2], data[3]]),
+            Res::Quartile | Res::High if data.len() == 6 =>
+                Date::deserialize_6_bytes(&[data[0], data[1], data[2], data[3], data[4], data[5]]),
             _ => bail!("Invalid date length"),
         }
     }
@@ -133,11 +152,11 @@ impl ProvenanceMarkResolution {
     pub fn serialize_seq(&self, seq: u32) -> Result<Vec<u8>> {
         match self.seq_bytes_length() {
             2 => {
-                if seq > u16::MAX as u32 {
+                if seq > (u16::MAX as u32) {
                     bail!("Sequence number out of range");
                 }
                 Ok((seq as u16).to_be_bytes().to_vec())
-            },
+            }
             4 => Ok(seq.to_be_bytes().to_vec()),
             _ => unreachable!(),
         }
