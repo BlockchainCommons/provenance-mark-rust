@@ -6,6 +6,8 @@ mod generator;
 pub use generator::*;
 mod seed;
 pub use seed::*;
+mod rng_state;
+pub use rng_state::*;
 mod date;
 mod crypto_utils;
 mod xoshiro256starstar;
@@ -31,7 +33,7 @@ mod tests {
         expected_urls: &[&str],
         only_print: bool,
     ) {
-        let provenance_gen = ProvenanceMarkGenerator::from_passphrase(resolution, "Wolf");
+        let provenance_gen = ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");
         let count = 10;
         // let base_date = Date::from_string("2023-06-20T12:00:00Z").unwrap();
         let calendar = chrono::Utc;

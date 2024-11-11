@@ -30,14 +30,14 @@ pub fn deserialize_cbor<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
     Ok(data)
 }
 
-pub fn serialize_seed<S>(seed: &[u8; PROVENANCE_SEED_LENGTH], serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize_block<S>(seed: &[u8; PROVENANCE_SEED_LENGTH], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
     serialize_base64(seed, serializer)
 }
 
-pub fn deserialize_seed<'de, D>(deserializer: D) -> Result<[u8; PROVENANCE_SEED_LENGTH], D::Error>
+pub fn deserialize_block<'de, D>(deserializer: D) -> Result<[u8; PROVENANCE_SEED_LENGTH], D::Error>
 where
     D: serde::Deserializer<'de>,
 {
