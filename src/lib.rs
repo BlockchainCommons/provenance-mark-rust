@@ -17,6 +17,7 @@ mod tests {
 
     use super::*;
 
+    #[allow(clippy::too_many_arguments)]
     fn run_test(
         resolution: ProvenanceMarkResolution,
         include_info: bool,
