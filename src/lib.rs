@@ -4,6 +4,8 @@ mod mark;
 pub use mark::*;
 mod generator;
 pub use generator::*;
+mod seed;
+pub use seed::*;
 mod date;
 mod crypto_utils;
 mod xoshiro256starstar;

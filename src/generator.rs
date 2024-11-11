@@ -3,6 +3,7 @@ use dcbor::{ CBOREncodable, Date };
 use serde::{ Serialize, Deserialize };
 use crate::util::{ serialize_base64, deserialize_base64 };
 
+use crate::{ProvenanceSeed, PROVENANCE_SEED_LENGTH};
 use crate::{
     crypto_utils::extend_key,
     xoshiro256starstar::Xoshiro256StarStar,
@@ -10,15 +11,12 @@ use crate::{
     ProvenanceMarkResolution,
 };
 
-const PROVENANCE_SEED_LENGTH: usize = 32;
-pub type ProvenanceSeed = [u8; PROVENANCE_SEED_LENGTH];
 pub type ProvenanceRngState = [u8; PROVENANCE_SEED_LENGTH];
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProvenanceMarkGenerator {
     res: ProvenanceMarkResolution,
-    #[serde(serialize_with = "serialize_base64", deserialize_with = "deserialize_base64")]
-    seed: Vec<u8>,
+    seed: ProvenanceSeed,
     #[serde(rename = "chainID")]
     #[serde(serialize_with = "serialize_base64", deserialize_with = "deserialize_base64")]
     chain_id: Vec<u8>,
@@ -38,12 +36,12 @@ impl ProvenanceMarkGenerator {
         rng_state: ProvenanceRngState
     ) -> Self {
         assert!(chain_id.len() == res.link_length());
-        Self { res, seed: seed.to_vec(), chain_id, next_seq, rng_state: rng_state.to_vec() }
+        Self { res, seed, chain_id, next_seq, rng_state: rng_state.to_vec() }
     }
 
     pub fn from_seed(res: ProvenanceMarkResolution, seed: ProvenanceSeed) -> Self {
-        let chain_id = seed[..res.link_length()].to_vec();
-        Self::new(res, seed, chain_id, 0, seed)
+        let chain_id = seed.to_bytes()[..res.link_length()].to_vec();
+        Self::new(res, seed.clone(), chain_id, 0, seed.to_bytes())
     }
 
     pub fn new_using<R>(
@@ -52,13 +50,15 @@ impl ProvenanceMarkGenerator {
     ) -> Self {
         // Randomness for a new seed can come from any secure random number generator.
         let data = rng_random_data(rng, PROVENANCE_SEED_LENGTH);
-        let mut seed = [0; PROVENANCE_SEED_LENGTH];
-        seed.copy_from_slice(&data);
+        let mut seed_data = [0; PROVENANCE_SEED_LENGTH];
+        seed_data.copy_from_slice(&data);
+        let seed = ProvenanceSeed::from_bytes(seed_data);
         Self::from_seed(res, seed)
     }
 
     pub fn from_passphrase(res: ProvenanceMarkResolution, passphrase: &str) -> Self {
-        let seed = extend_key(passphrase.as_bytes());
+        let seed_data = extend_key(passphrase.as_bytes());
+        let seed = ProvenanceSeed::from_bytes(seed_data);
         Self::from_seed(res, seed)
     }
 
@@ -100,7 +100,7 @@ impl std::fmt::Display for ProvenanceMarkGenerator {
             "ProvenanceMarkGenerator(chainID: {}, res: {}, seed: {}, nextSeq: {}, rngState: {:?})",
             hex::encode(&self.chain_id),
             self.res,
-            hex::encode(&self.seed),
+            self.seed.hex(),
             self.next_seq,
             self.rng_state
         )
