@@ -5,7 +5,7 @@ use crate::ProvenanceMark;
 
 impl EnvelopeEncodable for ProvenanceMark {
     fn into_envelope(self) -> Envelope {
-        Envelope::new(self)
+        Envelope::new(self.to_cbor())
     }
 }
 

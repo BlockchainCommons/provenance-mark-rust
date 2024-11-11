@@ -19,6 +19,7 @@ mod tests {
     use bc_ur::prelude::*;
     use chrono::TimeZone;
     use dcbor::Date;
+    use bc_envelope::prelude::*;
 
     use super::*;
 
@@ -157,10 +158,15 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(marks, url_marks);
 
-        for mark in marks {
+        for mark in marks.clone() {
             let data = serde_json::to_string(&mark).unwrap();
             let mark2: ProvenanceMark = serde_json::from_str(&data).unwrap();
             assert_eq!(mark, mark2);
+        }
+
+        for mark in marks {
+            let envelope = mark.into_envelope();
+            println!("{}", envelope.format());
         }
     }
 
