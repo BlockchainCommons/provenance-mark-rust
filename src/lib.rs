@@ -12,6 +12,7 @@ mod date;
 mod crypto_utils;
 mod xoshiro256starstar;
 mod util;
+mod envelope;
 
 #[cfg(test)]
 mod tests {
