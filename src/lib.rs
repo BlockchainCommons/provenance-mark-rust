@@ -31,37 +31,42 @@ mod tests {
         expected_bytemoji_ids: &[&str],
         expected_urs: &[&str],
         expected_urls: &[&str],
-        only_print: bool,
+        only_print: bool
     ) {
         let provenance_gen = ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");
         let count = 10;
         // let base_date = Date::from_string("2023-06-20T12:00:00Z").unwrap();
         let calendar = chrono::Utc;
-        let dates: Vec<Date> = (0..count).map(|i| {
-                    Date::from_datetime(calendar
+        let dates: Vec<Date> = (0..count)
+            .map(|i| {
+                Date::from_datetime(
+                    calendar
                         .with_ymd_and_hms(2023, 6, 20, 12, 0, 0)
                         .single()
                         .unwrap()
                         .checked_add_signed(chrono::Duration::days(i))
-                        .unwrap())
-                }).collect();
+                        .unwrap()
+                )
+            })
+            .collect();
 
         let mut encoded_generator = serde_json::to_string(&provenance_gen).unwrap();
 
-        let marks = dates.iter().map(|date| {
-            let mut gen: ProvenanceMarkGenerator = serde_json::from_str(&encoded_generator).unwrap();
+        let marks = dates
+            .iter()
+            .map(|date| {
+                let mut gen: ProvenanceMarkGenerator = serde_json
+                    ::from_str(&encoded_generator)
+                    .unwrap();
 
-            let title = if include_info {
-                Some("Lorem ipsum sit dolor amet.")
-            } else {
-                None
-            };
-            let result = gen.next(date.clone(), title);
+                let title = if include_info { Some("Lorem ipsum sit dolor amet.") } else { None };
+                let result = gen.next(date.clone(), title);
 
-            encoded_generator = serde_json::to_string(&gen).unwrap();
+                encoded_generator = serde_json::to_string(&gen).unwrap();
 
-            result
-        }).collect::<Vec<_>>();
+                result
+            })
+            .collect::<Vec<_>>();
 
         assert!(ProvenanceMark::is_sequence_valid(&marks));
 
@@ -70,49 +75,85 @@ mod tests {
         if only_print {
             marks.iter().for_each(|mark| println!("{}", mark));
         } else {
-            assert_eq!(marks.iter().map(|mark| mark.to_string()).collect::<Vec<_>>(), expected_descriptions);
+            assert_eq!(
+                marks
+                    .iter()
+                    .map(|mark| mark.to_string())
+                    .collect::<Vec<_>>(),
+                expected_descriptions
+            );
         }
 
-        let bytewords = marks.iter().map(|mark| mark.to_bytewords()).collect::<Vec<_>>();
+        let bytewords = marks
+            .iter()
+            .map(|mark| mark.to_bytewords())
+            .collect::<Vec<_>>();
         if only_print {
             bytewords.iter().for_each(|byteword| println!("{:?}", byteword));
         } else {
             assert_eq!(bytewords, expected_bytewords);
         }
-        let bytewords_marks = bytewords.iter().map(|byteword| ProvenanceMark::from_bytewords(resolution, byteword).unwrap()).collect::<Vec<_>>();
+        let bytewords_marks = bytewords
+            .iter()
+            .map(|byteword| ProvenanceMark::from_bytewords(resolution, byteword).unwrap())
+            .collect::<Vec<_>>();
         assert_eq!(marks, bytewords_marks);
 
-        let id_words = marks.iter().map(|mark| mark.bytewords_identifier(false)).collect::<Vec<_>>();
+        let id_words = marks
+            .iter()
+            .map(|mark| mark.bytewords_identifier(false))
+            .collect::<Vec<_>>();
         if only_print {
             id_words.iter().for_each(|id_word| println!("{:?}", id_word));
         } else {
             assert_eq!(id_words, expected_id_words);
         }
 
-        let bytemoji_ids = marks.iter().map(|mark| mark.bytemoji_identifier(false)).collect::<Vec<_>>();
+        let bytemoji_ids = marks
+            .iter()
+            .map(|mark| mark.bytemoji_identifier(false))
+            .collect::<Vec<_>>();
         if only_print {
             bytemoji_ids.iter().for_each(|bytemoji_id| println!("{:?}", bytemoji_id));
         } else {
             assert_eq!(bytemoji_ids, expected_bytemoji_ids);
         }
 
-        let urs = marks.iter().map(|mark| mark.ur_string()).collect::<Vec<_>>();
+        let urs = marks
+            .iter()
+            .map(|mark| mark.ur_string())
+            .collect::<Vec<_>>();
         if only_print {
             urs.iter().for_each(|ur| println!("{:?}", ur));
         } else {
             assert_eq!(urs, expected_urs);
         }
-        let ur_marks = urs.iter().map(|ur| ProvenanceMark::from_ur_string(ur).unwrap()).collect::<Vec<_>>();
+        let ur_marks = urs
+            .iter()
+            .map(|ur| ProvenanceMark::from_ur_string(ur).unwrap())
+            .collect::<Vec<_>>();
         assert_eq!(marks, ur_marks);
 
         let base_url = "https://example.com/validate";
-        let urls = marks.iter().map(|mark| mark.to_url(base_url)).collect::<Vec<_>>();
+        let urls = marks
+            .iter()
+            .map(|mark| mark.to_url(base_url))
+            .collect::<Vec<_>>();
         if only_print {
             urls.iter().for_each(|url| println!("{:?}", url));
         } else {
-            assert_eq!(urls.iter().map(|url| url.to_string()).collect::<Vec<_>>(), expected_urls);
+            assert_eq!(
+                urls
+                    .iter()
+                    .map(|url| url.to_string())
+                    .collect::<Vec<_>>(),
+                expected_urls
+            );
         }
-        let url_marks = urls.iter().map(|url| ProvenanceMark::from_url(url).unwrap()).collect::<Vec<_>>();
+        let url_marks = urls
+            .iter()
+            .map(|url| ProvenanceMark::from_url(url).unwrap())
+            .collect::<Vec<_>>();
         assert_eq!(marks, url_marks);
 
         for mark in marks {
@@ -211,7 +252,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -304,7 +345,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -397,7 +438,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -490,7 +531,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -583,7 +624,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -676,7 +717,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -769,7 +810,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 
@@ -862,7 +903,7 @@ mod tests {
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false,
+            false
         );
     }
 }
