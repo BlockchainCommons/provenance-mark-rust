@@ -1,0 +1,25 @@
+[package]
+name = "provenance-mark"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dcbor = { version = "^0.15.0", features = ["multithreaded"] }
+bc-rand = "^0.2.0"
+bc-crypto = "^0.5.0"
+bc-ur = "^0.5.0"
+
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "^1.0.0"
+hex = { version = "^0.4.3", default-features = true }
+chacha20 = "0.9.1"
+rand_core = "0.6"
+serde = { version = "1.0", features = ["derive"] }
+base64 = "0.21.0"
+serde_json = "1.0.132"
+url = "2.5.3"
+
+[dev-dependencies]
+indoc = "^2.0.0"
+version-sync = "^0.9.0"
+hex-literal = "^0.4.1"
