@@ -1,4 +1,7 @@
+use std::sync::Arc;
+
 use bc_crypto::SHA256_SIZE;
+use bc_envelope::{with_format_context_mut, FormatContext};
 use bc_ur::bytewords;
 use dcbor::{ prelude::*, Date };
 use url::Url;
@@ -18,7 +21,7 @@ use anyhow::{ bail, Result, Error };
 // JSON Example:
 // {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"znwVmQ==","res":0,"seq":0}
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Clone)]
 pub struct ProvenanceMark {
     res: ProvenanceMarkResolution,
 
@@ -254,6 +257,11 @@ impl ProvenanceMark {
 }
 
 impl ProvenanceMark {
+    /// The first four bytes of the mark's hash as a hex string.
+    pub fn identifier(&self) -> String {
+        hex::encode(&self.hash[..4])
+    }
+
     /// The first four bytes of the mark's hash as upper-case ByteWords.
     pub fn bytewords_identifier(&self, prefix: bool) -> String {
         let s = bytewords::identifier(&self.hash[..4].try_into().unwrap()).to_uppercase();
@@ -357,7 +365,7 @@ impl ProvenanceMark {
     }
 }
 
-impl std::fmt::Display for ProvenanceMark {
+impl std::fmt::Debug for ProvenanceMark {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut components = vec![
             format!("key: {}", hex::encode(&self.key)),
@@ -375,7 +383,34 @@ impl std::fmt::Display for ProvenanceMark {
     }
 }
 
-pub const PROVENANCE_MARK_TAG: Tag = Tag::new_with_static_name(0x50524f56, "provenance");
+impl std::fmt::Display for ProvenanceMark {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ProvenanceMark({})", self.identifier())
+    }
+}
+
+pub const TAG_PROVENANCE_MARK: TagValue = 0x50524f56;
+
+pub fn register_tags_in(context: &mut FormatContext) {
+    bc_envelope::register_tags_in(context);
+
+    context.tags_mut().set_summarizer(
+        TAG_PROVENANCE_MARK,
+        Arc::new(move |untagged_cbor: CBOR| {
+            let provenance_mark = ProvenanceMark::from_untagged_cbor(untagged_cbor)?;
+            Ok(provenance_mark.to_string())
+        })
+    );
+
+}
+
+pub fn register_tags() {
+    with_format_context_mut!(|context: &mut FormatContext| {
+        register_tags_in(context);
+    });
+}
+
+pub const PROVENANCE_MARK_TAG: Tag = Tag::with_static_name(0x50524f56, "provenance");
 
 impl CBORTagged for ProvenanceMark {
     fn cbor_tags() -> Vec<Tag> {

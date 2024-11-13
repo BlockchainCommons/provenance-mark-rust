@@ -19,7 +19,6 @@ mod tests {
     use bc_ur::prelude::*;
     use chrono::TimeZone;
     use dcbor::Date;
-    use bc_envelope::prelude::*;
 
     use super::*;
 
@@ -27,14 +26,16 @@ mod tests {
     fn run_test(
         resolution: ProvenanceMarkResolution,
         include_info: bool,
-        expected_descriptions: &[&str],
+        expected_display: &[&str],
+        expected_debug: &[&str],
         expected_bytewords: &[&str],
         expected_id_words: &[&str],
         expected_bytemoji_ids: &[&str],
         expected_urs: &[&str],
         expected_urls: &[&str],
-        only_print: bool
     ) {
+        crate::register_tags();
+
         let provenance_gen = ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");
         let count = 10;
         // let base_date = Date::from_string("2023-06-20T12:00:00Z").unwrap();
@@ -74,15 +75,27 @@ mod tests {
 
         assert!(!marks[1].precedes(&marks[0]));
 
-        if only_print {
-            marks.iter().for_each(|mark| println!("{}", mark));
+        if expected_display.is_empty() {
+            marks.iter().for_each(|mark| println!(r#""{}","#, mark));
         } else {
             assert_eq!(
                 marks
                     .iter()
-                    .map(|mark| mark.to_string())
+                    .map(|mark| format!("{}", mark))
                     .collect::<Vec<_>>(),
-                expected_descriptions
+                    expected_display
+            );
+        }
+
+        if expected_debug.is_empty() {
+            marks.iter().for_each(|mark| println!("{:?}", mark));
+        } else {
+            assert_eq!(
+                marks
+                    .iter()
+                    .map(|mark| format!("{:?}", mark))
+                    .collect::<Vec<_>>(),
+                    expected_debug
             );
         }
 
@@ -90,7 +103,7 @@ mod tests {
             .iter()
             .map(|mark| mark.to_bytewords())
             .collect::<Vec<_>>();
-        if only_print {
+        if expected_bytewords.is_empty() {
             bytewords.iter().for_each(|byteword| println!("{:?}", byteword));
         } else {
             assert_eq!(bytewords, expected_bytewords);
@@ -105,7 +118,7 @@ mod tests {
             .iter()
             .map(|mark| mark.bytewords_identifier(false))
             .collect::<Vec<_>>();
-        if only_print {
+        if expected_id_words.is_empty() {
             id_words.iter().for_each(|id_word| println!("{:?}", id_word));
         } else {
             assert_eq!(id_words, expected_id_words);
@@ -115,7 +128,7 @@ mod tests {
             .iter()
             .map(|mark| mark.bytemoji_identifier(false))
             .collect::<Vec<_>>();
-        if only_print {
+        if expected_bytemoji_ids.is_empty() {
             bytemoji_ids.iter().for_each(|bytemoji_id| println!("{:?}", bytemoji_id));
         } else {
             assert_eq!(bytemoji_ids, expected_bytemoji_ids);
@@ -125,7 +138,7 @@ mod tests {
             .iter()
             .map(|mark| mark.ur_string())
             .collect::<Vec<_>>();
-        if only_print {
+        if expected_urs.is_empty() {
             urs.iter().for_each(|ur| println!("{:?}", ur));
         } else {
             assert_eq!(urs, expected_urs);
@@ -141,7 +154,7 @@ mod tests {
             .iter()
             .map(|mark| mark.to_url(base_url))
             .collect::<Vec<_>>();
-        if only_print {
+        if expected_urls.is_empty() {
             urls.iter().for_each(|url| println!("{:?}", url));
         } else {
             assert_eq!(
@@ -163,26 +176,34 @@ mod tests {
             let mark2: ProvenanceMark = serde_json::from_str(&data).unwrap();
             assert_eq!(mark, mark2);
         }
-
-        for mark in marks {
-            let envelope = mark.into_envelope();
-            println!("{}", envelope.format());
-        }
     }
 
     #[test]
     fn test_low() {
-        let expected_descriptions = [
-            r#"ProvenanceMark(key: ce7c1599, hash: 65a4dfbf, chainID: ce7c1599, seq: 0, date: 2023-06-20T00:00:00Z)"#,
-            r#"ProvenanceMark(key: 695dafa1, hash: 4f1215da, chainID: ce7c1599, seq: 1, date: 2023-06-21T00:00:00Z)"#,
-            r#"ProvenanceMark(key: 38cfe538, hash: 69fd4e2b, chainID: ce7c1599, seq: 2, date: 2023-06-22T00:00:00Z)"#,
-            r#"ProvenanceMark(key: bedba2c8, hash: 8b358624, chainID: ce7c1599, seq: 3, date: 2023-06-23T00:00:00Z)"#,
-            r#"ProvenanceMark(key: a96ec2da, hash: 3c767e36, chainID: ce7c1599, seq: 4, date: 2023-06-24T00:00:00Z)"#,
-            r#"ProvenanceMark(key: d0703671, hash: 5003be92, chainID: ce7c1599, seq: 5, date: 2023-06-25T00:00:00Z)"#,
-            r#"ProvenanceMark(key: 19cd0a02, hash: 185b6dc7, chainID: ce7c1599, seq: 6, date: 2023-06-26T00:00:00Z)"#,
-            r#"ProvenanceMark(key: 55864d59, hash: 6af32a44, chainID: ce7c1599, seq: 7, date: 2023-06-27T00:00:00Z)"#,
-            r#"ProvenanceMark(key: c695d857, hash: 3b6f4a25, chainID: ce7c1599, seq: 8, date: 2023-06-28T00:00:00Z)"#,
-            r#"ProvenanceMark(key: d351f7df, hash: c183bf5f, chainID: ce7c1599, seq: 9, date: 2023-06-29T00:00:00Z)"#,
+        let expected_display = [
+            "ProvenanceMark(65a4dfbf)",
+            "ProvenanceMark(4f1215da)",
+            "ProvenanceMark(69fd4e2b)",
+            "ProvenanceMark(8b358624)",
+            "ProvenanceMark(3c767e36)",
+            "ProvenanceMark(5003be92)",
+            "ProvenanceMark(185b6dc7)",
+            "ProvenanceMark(6af32a44)",
+            "ProvenanceMark(3b6f4a25)",
+            "ProvenanceMark(c183bf5f)",
+        ];
+
+        let expected_debug = [
+            r#"ProvenanceMark(key: ce7c1599, hash: 65a4dfbf, chainID: ce7c1599, seq: 0, date: 2023-06-20)"#,
+            r#"ProvenanceMark(key: 695dafa1, hash: 4f1215da, chainID: ce7c1599, seq: 1, date: 2023-06-21)"#,
+            r#"ProvenanceMark(key: 38cfe538, hash: 69fd4e2b, chainID: ce7c1599, seq: 2, date: 2023-06-22)"#,
+            r#"ProvenanceMark(key: bedba2c8, hash: 8b358624, chainID: ce7c1599, seq: 3, date: 2023-06-23)"#,
+            r#"ProvenanceMark(key: a96ec2da, hash: 3c767e36, chainID: ce7c1599, seq: 4, date: 2023-06-24)"#,
+            r#"ProvenanceMark(key: d0703671, hash: 5003be92, chainID: ce7c1599, seq: 5, date: 2023-06-25)"#,
+            r#"ProvenanceMark(key: 19cd0a02, hash: 185b6dc7, chainID: ce7c1599, seq: 6, date: 2023-06-26)"#,
+            r#"ProvenanceMark(key: 55864d59, hash: 6af32a44, chainID: ce7c1599, seq: 7, date: 2023-06-27)"#,
+            r#"ProvenanceMark(key: c695d857, hash: 3b6f4a25, chainID: ce7c1599, seq: 8, date: 2023-06-28)"#,
+            r#"ProvenanceMark(key: d351f7df, hash: c183bf5f, chainID: ce7c1599, seq: 9, date: 2023-06-29)"#,
         ];
 
         let expected_bytewords = [
@@ -253,29 +274,42 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Low,
             false,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_low_with_info() {
-        let expected_descriptions = [
-            r#"ProvenanceMark(key: ce7c1599, hash: c9929b6e, chainID: ce7c1599, seq: 0, date: 2023-06-20T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: 695dafa1, hash: dec86566, chainID: ce7c1599, seq: 1, date: 2023-06-21T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: 38cfe538, hash: 08677f72, chainID: ce7c1599, seq: 2, date: 2023-06-22T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: bedba2c8, hash: e736559f, chainID: ce7c1599, seq: 3, date: 2023-06-23T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: a96ec2da, hash: 9b8a5879, chainID: ce7c1599, seq: 4, date: 2023-06-24T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: d0703671, hash: 2c68ee9b, chainID: ce7c1599, seq: 5, date: 2023-06-25T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: 19cd0a02, hash: 48955250, chainID: ce7c1599, seq: 6, date: 2023-06-26T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: 55864d59, hash: eb2f7fc9, chainID: ce7c1599, seq: 7, date: 2023-06-27T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: c695d857, hash: 3e142656, chainID: ce7c1599, seq: 8, date: 2023-06-28T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
-            r#"ProvenanceMark(key: d351f7df, hash: 4831416c, chainID: ce7c1599, seq: 9, date: 2023-06-29T00:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
+        let expected_display = [
+            "ProvenanceMark(c9929b6e)",
+            "ProvenanceMark(dec86566)",
+            "ProvenanceMark(08677f72)",
+            "ProvenanceMark(e736559f)",
+            "ProvenanceMark(9b8a5879)",
+            "ProvenanceMark(2c68ee9b)",
+            "ProvenanceMark(48955250)",
+            "ProvenanceMark(eb2f7fc9)",
+            "ProvenanceMark(3e142656)",
+            "ProvenanceMark(4831416c)",
+        ];
+
+        let expected_debug = [
+            r#"ProvenanceMark(key: ce7c1599, hash: c9929b6e, chainID: ce7c1599, seq: 0, date: 2023-06-20, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: 695dafa1, hash: dec86566, chainID: ce7c1599, seq: 1, date: 2023-06-21, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: 38cfe538, hash: 08677f72, chainID: ce7c1599, seq: 2, date: 2023-06-22, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: bedba2c8, hash: e736559f, chainID: ce7c1599, seq: 3, date: 2023-06-23, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: a96ec2da, hash: 9b8a5879, chainID: ce7c1599, seq: 4, date: 2023-06-24, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: d0703671, hash: 2c68ee9b, chainID: ce7c1599, seq: 5, date: 2023-06-25, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: 19cd0a02, hash: 48955250, chainID: ce7c1599, seq: 6, date: 2023-06-26, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: 55864d59, hash: eb2f7fc9, chainID: ce7c1599, seq: 7, date: 2023-06-27, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: c695d857, hash: 3e142656, chainID: ce7c1599, seq: 8, date: 2023-06-28, info: "Lorem ipsum sit dolor amet.")"#,
+            r#"ProvenanceMark(key: d351f7df, hash: 4831416c, chainID: ce7c1599, seq: 9, date: 2023-06-29, info: "Lorem ipsum sit dolor amet.")"#,
         ];
 
         let expected_bytewords = [
@@ -346,19 +380,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Low,
             true,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_medium() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(5a225674)",
+            "ProvenanceMark(cdf2d4eb)",
+            "ProvenanceMark(9fd023a3)",
+            "ProvenanceMark(d2acd98f)",
+            "ProvenanceMark(a9ad894b)",
+            "ProvenanceMark(08f81843)",
+            "ProvenanceMark(905333b2)",
+            "ProvenanceMark(091eeeaf)",
+            "ProvenanceMark(808d25bf)",
+            "ProvenanceMark(14e5ac07)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f, hash: 5a225674d1827609, chainID: ce7c1599b0506f5f, seq: 0, date: 2023-06-20T12:00:00Z)"#,
             r#"ProvenanceMark(key: 695dafa138cfe538, hash: cdf2d4eb79b4a4da, chainID: ce7c1599b0506f5f, seq: 1, date: 2023-06-21T12:00:00Z)"#,
             r#"ProvenanceMark(key: bedba2c8a96ec2da, hash: 9fd023a34ea727b1, chainID: ce7c1599b0506f5f, seq: 2, date: 2023-06-22T12:00:00Z)"#,
@@ -439,19 +486,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Medium,
             false,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_medium_with_info() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(447f1063)",
+            "ProvenanceMark(b18f5360)",
+            "ProvenanceMark(523f9657)",
+            "ProvenanceMark(740467a1)",
+            "ProvenanceMark(5fab738f)",
+            "ProvenanceMark(199bc28e)",
+            "ProvenanceMark(fa427253)",
+            "ProvenanceMark(2d0cb294)",
+            "ProvenanceMark(7b684ef1)",
+            "ProvenanceMark(d7c671e2)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f, hash: 447f1063fccdc8f4, chainID: ce7c1599b0506f5f, seq: 0, date: 2023-06-20T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: 695dafa138cfe538, hash: b18f5360ead0b3cc, chainID: ce7c1599b0506f5f, seq: 1, date: 2023-06-21T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: bedba2c8a96ec2da, hash: 523f9657cbd05eff, chainID: ce7c1599b0506f5f, seq: 2, date: 2023-06-22T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
@@ -532,19 +592,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Medium,
             true,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_quartile() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(519f20b6)",
+            "ProvenanceMark(6152368e)",
+            "ProvenanceMark(edf42863)",
+            "ProvenanceMark(b40ff1c2)",
+            "ProvenanceMark(66c5c63c)",
+            "ProvenanceMark(93fa96c9)",
+            "ProvenanceMark(a2e70692)",
+            "ProvenanceMark(225286e2)",
+            "ProvenanceMark(ddc425d9)",
+            "ProvenanceMark(4f6161ce)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f9091e0fca796a4f3, hash: 519f20b6b72384595fe3d6258a09511f, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 0, date: 2023-06-20T12:00:00Z)"#,
             r#"ProvenanceMark(key: 695dafa138cfe538bedba2c8a96ec2da, hash: 6152368e7f49e52f80c9e21f4defac1d, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 1, date: 2023-06-21T12:00:00Z)"#,
             r#"ProvenanceMark(key: d070367119cd0a0255864d59c695d857, hash: edf4286385fc90e8e3972cdf37cfd77f, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 2, date: 2023-06-22T12:00:00Z)"#,
@@ -625,19 +698,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Quartile,
             false,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_quartile_with_info() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(9a30e79e)",
+            "ProvenanceMark(a184b7a0)",
+            "ProvenanceMark(9ee9d0eb)",
+            "ProvenanceMark(d001bbf2)",
+            "ProvenanceMark(f60a16e7)",
+            "ProvenanceMark(01a56c23)",
+            "ProvenanceMark(72521a94)",
+            "ProvenanceMark(662c4a4d)",
+            "ProvenanceMark(b5d6537b)",
+            "ProvenanceMark(07bb057f)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f9091e0fca796a4f3, hash: 9a30e79e05124df8b6d8a5e56ef4f445, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 0, date: 2023-06-20T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: 695dafa138cfe538bedba2c8a96ec2da, hash: a184b7a0837c9495aa0a2fc51bceddb2, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 1, date: 2023-06-21T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: d070367119cd0a0255864d59c695d857, hash: 9ee9d0eba328b046e20f8884b5ad85d0, chainID: ce7c1599b0506f5f9091e0fca796a4f3, seq: 2, date: 2023-06-22T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
@@ -718,19 +804,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::Quartile,
             true,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_high() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(57c0cf20)",
+            "ProvenanceMark(6b8fac78)",
+            "ProvenanceMark(40f74333)",
+            "ProvenanceMark(fc1ac0c6)",
+            "ProvenanceMark(45de8d39)",
+            "ProvenanceMark(bee8c0e9)",
+            "ProvenanceMark(8e70979a)",
+            "ProvenanceMark(3f405e54)",
+            "ProvenanceMark(9519def5)",
+            "ProvenanceMark(6edb360d)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, hash: 57c0cf203d12f0c56e6c223178cfadb16cc6352a68c69bc1b1fe9712ebe7dd4f, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 0, date: 2023-06-20T12:00:00Z)"#,
             r#"ProvenanceMark(key: 695dafa138cfe538bedba2c8a96ec2dad070367119cd0a0255864d59c695d857, hash: 6b8fac78fd6471a352165ef4ee956ae6f9e0c75db8057b76f41a56c75c340844, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 1, date: 2023-06-21T12:00:00Z)"#,
             r#"ProvenanceMark(key: d351f7dff419008f691d0bebe4e71f69bfd291fd7e6eb4dff86f78ab260ce12c, hash: 40f74333405f7bf307a95e12d7cb3f451768c0b3fa01d8c01d283c8bfa052f74, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 2, date: 2023-06-22T12:00:00Z)"#,
@@ -811,19 +910,32 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::High,
             false,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 
     #[test]
     fn test_high_with_info() {
-        let expected_descriptions = [
+        let expected_display = [
+            "ProvenanceMark(dfa31e8b)",
+            "ProvenanceMark(a24aad44)",
+            "ProvenanceMark(82e1cbc6)",
+            "ProvenanceMark(f6c497c9)",
+            "ProvenanceMark(73581631)",
+            "ProvenanceMark(cc67f578)",
+            "ProvenanceMark(3c03066b)",
+            "ProvenanceMark(e433b5d9)",
+            "ProvenanceMark(2b80e81d)",
+            "ProvenanceMark(7a8e1652)",
+        ];
+
+        let expected_debug = [
             r#"ProvenanceMark(key: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, hash: dfa31e8bc3b90a8e52b3f859a03c8a32e1f5618daa00c764d84686fefbd22945, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 0, date: 2023-06-20T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: 695dafa138cfe538bedba2c8a96ec2dad070367119cd0a0255864d59c695d857, hash: a24aad4462e7da702f3a543489436464c488fdfb60858a1e5db3ce3fd664fd18, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 1, date: 2023-06-21T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
             r#"ProvenanceMark(key: d351f7dff419008f691d0bebe4e71f69bfd291fd7e6eb4dff86f78ab260ce12c, hash: 82e1cbc60a1cc6ace839d4d15b7a2e0534121ef6d2b9035e200a1e6e5071c25e, chainID: ce7c1599b0506f5f9091e0fca796a4f3dd05f9432bce80b929ed84d65874ce10, seq: 2, date: 2023-06-22T12:00:00Z, info: "Lorem ipsum sit dolor amet.")"#,
@@ -904,13 +1016,13 @@ mod tests {
         run_test(
             ProvenanceMarkResolution::High,
             true,
-            &expected_descriptions,
+            &expected_display,
+            &expected_debug,
             &expected_bytewords,
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
             &expected_urls,
-            false
         );
     }
 }
