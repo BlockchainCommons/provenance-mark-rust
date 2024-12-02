@@ -1,3 +1,31 @@
+#![doc(html_root_url = "https://docs.rs/provenance-mark/0.1.0")]
+#![warn(rust_2018_idioms)]
+
+//! # Introduction
+//!
+//! [Provenance Marks](https://provemark.com) provide a
+//! cryptographically-secured system for establishing and verifying the
+//! authenticity of works in an age of rampant AI-powered manipulation and
+//! plagiarism. By combining cryptography, pseudorandom number generation, and
+//! linguistic representation, this system generates unique, sequential marks
+//! that commit to the content of preceding and subsequent works. These marks
+//! ensure public and easy verification of provenance, offering robust security
+//! and intuitive usability. Provenance Marks are particularly valuable for
+//! securing artistic, intellectual, and commercial works against fraud and deep
+//! fakes, protecting creators’ reputations and the integrity of their
+//! creations.
+//!
+//! # Getting Started
+//!
+//! ```toml
+//! [dependencies]
+//! provenance-mark = "0.1.0"
+//! ```
+//!
+//! # Examples
+//!
+//! See the unit tests in the source code for examples of how to use this library.
+
 mod resolution;
 pub use resolution::*;
 mod mark;
@@ -1024,5 +1052,15 @@ mod tests {
             &expected_urs,
             &expected_urls,
         );
+    }
+
+    #[test]
+    fn test_readme_deps() {
+        version_sync::assert_markdown_deps_updated!("README.md");
+    }
+
+    #[test]
+    fn test_html_root_url() {
+        version_sync::assert_html_root_url_updated!("src/lib.rs");
     }
 }

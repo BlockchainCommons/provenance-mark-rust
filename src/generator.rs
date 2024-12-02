@@ -1,3 +1,5 @@
+use std::fmt::Formatter;
+
 use bc_rand::RandomNumberGenerator;
 use dcbor::{ CBOREncodable, Date };
 use serde::{ Serialize, Deserialize };
@@ -84,7 +86,7 @@ impl ProvenanceMarkGenerator {
 }
 
 impl std::fmt::Display for ProvenanceMarkGenerator {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "ProvenanceMarkGenerator(chainID: {}, res: {}, seed: {}, nextSeq: {}, rngState: {:?})",
