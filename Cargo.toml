@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 description = "A cryptographically-secured system for establishing and verifying the authenticity of works"
 authors = ["Blockchain Commons"]
-keywords = ["cryptography"]
 repository = "https://github.com/BlockchainCommons/provenance-mark-rust"
 readme = "README.md"
 license = "BSD-2-Clause-Patent"
-categories = ["cryptography"]
 documentation = "https://docs.rs/provenance-mark"
+keywords = ["cryptography"] # Up to five
+categories = ["cryptography"] # https://crates.io/category_slugs
 
 [dependencies]
 dcbor = { version = "^0.16.0", features = ["multithreaded"] }
