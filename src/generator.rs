@@ -1,5 +1,6 @@
 use std::fmt::Formatter;
 
+use bc_crypto::sha256;
 use bc_rand::RandomNumberGenerator;
 use dcbor::{ CBOREncodable, Date };
 use serde::{ Serialize, Deserialize };
@@ -28,8 +29,10 @@ pub struct ProvenanceMarkGenerator {
 
 impl ProvenanceMarkGenerator {
     pub fn new_with_seed(res: ProvenanceMarkResolution, seed: ProvenanceSeed) -> Self {
-        let chain_id = seed.to_bytes()[..res.link_length()].to_vec();
-        Self::new(res, seed.clone(), chain_id, 0, seed.to_bytes().into())
+        // Definitely don't use the bare seed as the chain ID!
+        let seed_digest = sha256(seed.to_bytes().as_ref());
+        let chain_id = seed_digest[..res.link_length()].to_vec();
+        Self::new(res, seed.clone(), chain_id, 0, seed_digest.into())
     }
 
     pub fn new_with_passphrase(res: ProvenanceMarkResolution, passphrase: &str) -> Self {
@@ -39,7 +42,13 @@ impl ProvenanceMarkGenerator {
     }
 
     pub fn new_using(res: ProvenanceMarkResolution, rng: &mut impl RandomNumberGenerator) -> Self {
+        // Randomness for a new seed can come from any secure random number generator.
         let seed = ProvenanceSeed::new_using(rng);
+        Self::new_with_seed(res, seed)
+    }
+
+    pub fn new_random(res: ProvenanceMarkResolution) -> Self {
+        let seed = ProvenanceSeed::new();
         Self::new_with_seed(res, seed)
     }
 

@@ -1,10 +1,12 @@
 use base64::Engine as _;
+use bc_ur::UR;
 use dcbor::{ prelude::*, Date };
 use serde::ser::Serializer;
 use serde::de::{ Deserializer, Error as DeError };
 use serde::Deserialize;
+use serde_json::json;
 
-use crate::PROVENANCE_SEED_LENGTH;
+use crate::{ProvenanceSeed, PROVENANCE_SEED_LENGTH};
 
 pub fn serialize_base64<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where S: Serializer
@@ -18,6 +20,11 @@ pub fn deserialize_base64<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
 {
     let s = String::deserialize(deserializer)?;
     base64::engine::general_purpose::STANDARD.decode(s).map_err(DeError::custom)
+}
+
+pub fn parse_seed(s: &str) -> Result<ProvenanceSeed, String> {
+    let seed: ProvenanceSeed = serde_json::from_value(json!(s)).map_err(|e| e.to_string())?;
+    Ok(seed)
 }
 
 pub fn serialize_cbor<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
@@ -68,4 +75,17 @@ pub fn deserialize_iso8601<'de, D>(deserializer: D) -> Result<Date, D::Error>
 {
     let s = String::deserialize(deserializer)?;
     Date::from_string(s).map_err(serde::de::Error::custom)
+}
+
+pub fn serialize_ur<S>(ur: &UR, serializer: S) -> Result<S::Ok, S::Error>
+    where S: serde::Serializer
+{
+    serializer.serialize_str(&ur.to_string())
+}
+
+pub fn deserialize_ur<'de, D>(deserializer: D) -> Result<UR, D::Error>
+    where D: serde::Deserializer<'de>
+{
+    let s = String::deserialize(deserializer)?;
+    UR::from_ur_string(s).map_err(serde::de::Error::custom)
 }

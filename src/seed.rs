@@ -6,10 +6,8 @@ pub const PROVENANCE_SEED_LENGTH: usize = 32;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ProvenanceSeed(
-    #[serde(serialize_with = "serialize_block", deserialize_with = "deserialize_block")] [
-        u8;
-        PROVENANCE_SEED_LENGTH
-    ],
+    #[serde(serialize_with = "serialize_block", deserialize_with = "deserialize_block")]
+    [ u8; PROVENANCE_SEED_LENGTH ]
 );
 
 impl ProvenanceSeed {

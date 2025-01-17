@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bc_crypto::SHA256_SIZE;
 use bc_envelope::{with_format_context_mut, FormatContext};
 use bc_ur::bytewords;
-use dcbor::{ prelude::*, Date };
+use dcbor::{prelude::*, Date};
 use url::Url;
 use serde::{ Serialize, Deserialize };
 use crate::util::{
@@ -23,7 +23,15 @@ use anyhow::{ bail, Result, Error };
 
 #[derive(Serialize, Clone)]
 pub struct ProvenanceMark {
+    seq: u32,
+
+    #[serde(serialize_with = "serialize_iso8601")]
+    date: Date,
+
     res: ProvenanceMarkResolution,
+
+    #[serde(serialize_with = "serialize_base64")]
+    chain_id: Vec<u8>,
 
     #[serde(serialize_with = "serialize_base64")]
     key: Vec<u8>,
@@ -31,22 +39,14 @@ pub struct ProvenanceMark {
     #[serde(serialize_with = "serialize_base64")]
     hash: Vec<u8>,
 
-    #[serde(serialize_with = "serialize_base64")]
-    chain_id: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty", serialize_with = "serialize_cbor")]
+    info_bytes: Vec<u8>,
 
     #[serde(skip)]
     seq_bytes: Vec<u8>,
 
     #[serde(skip)]
     date_bytes: Vec<u8>,
-
-    #[serde(default, skip_serializing_if = "Vec::is_empty", serialize_with = "serialize_cbor")]
-    info_bytes: Vec<u8>,
-
-    seq: u32,
-
-    #[serde(serialize_with = "serialize_iso8601")]
-    date: Date,
 }
 
 impl<'de> Deserialize<'de> for ProvenanceMark {
@@ -157,7 +157,7 @@ impl ProvenanceMark {
         chain_id: Vec<u8>,
         seq: u32,
         date: Date,
-        info: Option<impl CBOREncodable>
+        info: Option<impl CBOREncodable>,
     ) -> Result<Self> {
         if key.len() != res.link_length() {
             bail!("Invalid key length");

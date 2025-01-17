@@ -1,6 +1,6 @@
 [package]
 name = "provenance-mark"
-version = "0.1.2"
+version = "0.2.0"
 edition = "2021"
 description = "A cryptographically-secured system for establishing and verifying the authenticity of works"
 authors = ["Blockchain Commons"]
@@ -23,9 +23,9 @@ anyhow = "^1.0.0"
 hex = { version = "^0.4.3", default-features = true }
 chacha20 = "0.9.1"
 rand_core = "0.6"
-serde = { version = "1.0", features = ["derive"] }
-base64 = "0.21.0"
-serde_json = "1.0.132"
+serde = { version = "^1.0.0", features = ["derive"] }
+base64 = "^0.22.0"
+serde_json = "^1.0.132"
 url = "2.5.3"
 
 [dev-dependencies]
