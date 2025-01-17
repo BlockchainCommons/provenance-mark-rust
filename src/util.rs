@@ -27,6 +27,10 @@ pub fn parse_seed(s: &str) -> Result<ProvenanceSeed, String> {
     Ok(seed)
 }
 
+pub fn parse_date(s: &str) -> Result<dcbor::Date, String> {
+    dcbor::Date::from_string(s).map_err(|e| e.to_string())
+}
+
 pub fn serialize_cbor<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
     serialize_base64(bytes, serializer)
 }

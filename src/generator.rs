@@ -30,9 +30,10 @@ pub struct ProvenanceMarkGenerator {
 impl ProvenanceMarkGenerator {
     pub fn new_with_seed(res: ProvenanceMarkResolution, seed: ProvenanceSeed) -> Self {
         // Definitely don't use the bare seed as the chain ID!
-        let seed_digest = sha256(seed.to_bytes().as_ref());
-        let chain_id = seed_digest[..res.link_length()].to_vec();
-        Self::new(res, seed.clone(), chain_id, 0, seed_digest.into())
+        let digest1 = sha256(seed.to_bytes().as_ref());
+        let chain_id = digest1[..res.link_length()].to_vec();
+        let digest2 = sha256(digest1);
+        Self::new(res, seed.clone(), chain_id, 0, digest2.into())
     }
 
     pub fn new_with_passphrase(res: ProvenanceMarkResolution, passphrase: &str) -> Self {
