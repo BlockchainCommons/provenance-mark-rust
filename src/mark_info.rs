@@ -75,20 +75,19 @@ impl ProvenanceMarkInfo {
     pub fn markdown_summary(&self) -> String {
         let mut lines: Vec<String> = Vec::new();
 
-        lines.push("".to_string());
         lines.push("---".to_string());
-
-        lines.push("".to_string());
-        lines.push(format!("#### {}", self.ur));
 
         lines.push("".to_string());
         lines.push(format!("{}", self.mark.date()));
 
         lines.push("".to_string());
-        lines.push(format!("`{}`", self.bytewords));
+        lines.push(format!("#### {}", self.ur));
 
         lines.push("".to_string());
-        lines.push(self.bytemoji.clone());
+        lines.push(format!("#### `{}`", self.bytewords));
+
+        lines.push("".to_string());
+        lines.push(self.bytemoji.clone().to_string());
 
         lines.push("".to_string());
         if !self.comment.is_empty() {

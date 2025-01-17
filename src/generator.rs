@@ -28,6 +28,28 @@ pub struct ProvenanceMarkGenerator {
 }
 
 impl ProvenanceMarkGenerator {
+    pub fn res(&self) -> &ProvenanceMarkResolution {
+        &self.res
+    }
+
+    pub fn seed(&self) -> &ProvenanceSeed {
+        &self.seed
+    }
+
+    pub fn chain_id(&self) -> &[u8] {
+        &self.chain_id
+    }
+
+    pub fn next_seq(&self) -> u32 {
+        self.next_seq
+    }
+
+    pub fn rng_state(&self) -> &RngState {
+        &self.rng_state
+    }
+}
+
+impl ProvenanceMarkGenerator {
     pub fn new_with_seed(res: ProvenanceMarkResolution, seed: ProvenanceSeed) -> Self {
         // Definitely don't use the bare seed as the chain ID!
         let digest1 = sha256(seed.to_bytes().as_ref());
