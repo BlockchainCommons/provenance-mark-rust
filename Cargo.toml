@@ -8,8 +8,8 @@ repository = "https://github.com/BlockchainCommons/provenance-mark-rust"
 readme = "README.md"
 license = "BSD-2-Clause-Patent"
 documentation = "https://docs.rs/provenance-mark"
-keywords = ["cryptography"] # Up to five
-categories = ["cryptography"] # https://crates.io/category_slugs
+keywords = ["cryptography", "provenance", "copyright", "blockchain"] # Up to five
+categories = ["cryptography", "authentication"] # https://crates.io/category_slugs
 
 [dependencies]
 dcbor = { version = "^0.16.0", features = ["multithreaded"] }
