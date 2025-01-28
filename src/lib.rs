@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/provenance-mark/0.3.1")]
+#![doc(html_root_url = "https://docs.rs/provenance-mark/0.3.2")]
 #![warn(rust_2018_idioms)]
 
 //! # Introduction
@@ -19,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! provenance-mark = "0.3.1"
+//! provenance-mark = "0.3.2"
 //! ```
 //!
 //! # Examples
