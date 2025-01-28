@@ -1,19 +1,16 @@
+#[cfg(feature = "envelope")]
 use std::sync::Arc;
 
-use bc_crypto::SHA256_SIZE;
-use bc_envelope::{with_format_context_mut, FormatContext};
 use bc_ur::bytewords;
 use dcbor::{prelude::*, Date};
 use url::Url;
 use serde::{ Serialize, Deserialize };
-use crate::util::{
-    serialize_iso8601,
-    deserialize_iso8601,
-    serialize_base64,
-    deserialize_base64,
-    serialize_cbor,
-    deserialize_cbor,
-};
+use crate::{crypto_utils::SHA256_SIZE, util::{
+    deserialize_base64, deserialize_cbor, deserialize_iso8601, serialize_base64, serialize_cbor, serialize_iso8601
+}};
+
+#[cfg(feature = "envelope")]
+use bc_envelope::{with_format_context_mut, FormatContext};
 
 use crate::{ crypto_utils::{ obfuscate, sha256, sha256_prefix }, ProvenanceMarkResolution };
 use anyhow::{ bail, Result, Error };
@@ -391,6 +388,7 @@ impl std::fmt::Display for ProvenanceMark {
 
 pub const TAG_PROVENANCE_MARK: TagValue = 0x50524f56;
 
+#[cfg(feature = "envelope")]
 pub fn register_tags_in(context: &mut FormatContext) {
     bc_envelope::register_tags_in(context);
 
@@ -404,6 +402,7 @@ pub fn register_tags_in(context: &mut FormatContext) {
 
 }
 
+#[cfg(feature = "envelope")]
 pub fn register_tags() {
     with_format_context_mut!(|context: &mut FormatContext| {
         register_tags_in(context);

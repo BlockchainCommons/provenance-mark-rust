@@ -42,6 +42,8 @@ mod date;
 mod crypto_utils;
 mod xoshiro256starstar;
 pub mod util;
+
+#[cfg(feature = "envelope")]
 mod envelope;
 
 #[cfg(test)]
@@ -64,6 +66,7 @@ mod tests {
         expected_urs: &[&str],
         expected_urls: &[&str],
     ) {
+        #[cfg(feature = "envelope")]
         crate::register_tags();
 
         let provenance_gen = ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");

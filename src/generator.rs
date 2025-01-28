@@ -1,9 +1,9 @@
 use std::fmt::Formatter;
 
-use bc_crypto::sha256;
 use bc_rand::RandomNumberGenerator;
 use dcbor::{ CBOREncodable, Date };
 use serde::{ Serialize, Deserialize };
+use crate::crypto_utils::sha256;
 use crate::util::{ serialize_base64, deserialize_base64 };
 
 use crate::{ ProvenanceSeed, RngState };
