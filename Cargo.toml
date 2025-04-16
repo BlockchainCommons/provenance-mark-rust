@@ -1,6 +1,6 @@
 [package]
 name = "provenance-mark"
-version = "0.5.0"
+version = "0.6.0"
 edition = "2021"
 description = "A cryptographically-secured system for establishing and verifying the authenticity of works"
 authors = ["Blockchain Commons"]
@@ -8,16 +8,24 @@ repository = "https://github.com/BlockchainCommons/provenance-mark-rust"
 readme = "README.md"
 license = "BSD-2-Clause-Patent"
 documentation = "https://docs.rs/provenance-mark"
-keywords = ["cryptography", "provenance", "copyright", "blockchain"] # Up to five
-categories = ["cryptography", "authentication"] # https://crates.io/category_slugs
+keywords = [
+    "cryptography",
+    "provenance",
+    "copyright",
+    "blockchain",
+] # Up to five
+categories = [
+    "cryptography",
+    "authentication",
+] # https://crates.io/category_slugs
 
 [dependencies]
-dcbor = { version = "^0.16.0", features = ["multithreaded"] }
-bc-rand = "^0.2.0"
+dcbor = { version = "^0.17.0", features = ["multithreaded"] }
+bc-rand = "^0.3.0"
 sha2 = "^0.10.6"
 hkdf = "^0.12.3"
-bc-ur = "^0.6.2"
-bc-envelope = {version = "^0.24.0", optional = true }
+bc-ur = "^0.7.0"
+bc-envelope = { version = "^0.26.0", optional = true }
 
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "^1.0.0"
