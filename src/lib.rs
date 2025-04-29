@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/provenance-mark/0.6.0")]
+#![doc(html_root_url = "https://docs.rs/provenance-mark/0.7.0")]
 #![warn(rust_2018_idioms)]
 
 //! # Introduction
@@ -19,7 +19,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! provenance-mark = "0.6.0"
+//! provenance-mark = "0.7.0"
 //! ```
 //!
 //! # Examples
@@ -64,7 +64,7 @@ mod tests {
         expected_id_words: &[&str],
         expected_bytemoji_ids: &[&str],
         expected_urs: &[&str],
-        expected_urls: &[&str],
+        expected_urls: &[&str]
     ) {
         #[cfg(feature = "envelope")]
         crate::register_tags();
@@ -116,7 +116,7 @@ mod tests {
                     .iter()
                     .map(|mark| format!("{}", mark))
                     .collect::<Vec<_>>(),
-                    expected_display
+                expected_display
             );
         }
 
@@ -128,7 +128,7 @@ mod tests {
                     .iter()
                     .map(|mark| format!("{:?}", mark))
                     .collect::<Vec<_>>(),
-                    expected_debug
+                expected_debug
             );
         }
 
@@ -307,7 +307,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -407,7 +407,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -507,7 +507,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -607,7 +607,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -707,7 +707,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -807,7 +807,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -907,7 +907,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
@@ -1007,7 +1007,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls,
+            &expected_urls
         );
     }
 
