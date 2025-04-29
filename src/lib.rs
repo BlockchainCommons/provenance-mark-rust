@@ -91,14 +91,14 @@ mod tests {
         let marks = dates
             .iter()
             .map(|date| {
-                let mut gen: ProvenanceMarkGenerator = serde_json
+                let mut generator: ProvenanceMarkGenerator = serde_json
                     ::from_str(&encoded_generator)
                     .unwrap();
 
                 let title = if include_info { Some("Lorem ipsum sit dolor amet.") } else { None };
-                let result = gen.next(date.clone(), title);
+                let result = generator.next(date.clone(), title);
 
-                encoded_generator = serde_json::to_string(&gen).unwrap();
+                encoded_generator = serde_json::to_string(&generator).unwrap();
 
                 result
             })

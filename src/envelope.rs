@@ -13,6 +13,6 @@ impl TryFrom<Envelope> for ProvenanceMark {
     type Error = Error;
 
     fn try_from(envelope: Envelope) -> Result<Self> {
-        envelope.subject().try_leaf()?.try_into()
+        Ok(envelope.subject().try_leaf()?.try_into()?)
     }
 }

@@ -1,4 +1,4 @@
-use bc_ur::prelude::*;
+use bc_ur::{UREncodable, UR};
 use serde::{Deserialize, Serialize};
 
 use crate::ProvenanceMark;

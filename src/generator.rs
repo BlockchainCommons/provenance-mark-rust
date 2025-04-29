@@ -1,7 +1,7 @@
 use std::fmt::Formatter;
 
 use bc_rand::RandomNumberGenerator;
-use dcbor::{ CBOREncodable, Date };
+use dcbor::{ prelude::*, Date };
 use serde::{ Serialize, Deserialize };
 use crate::crypto_utils::sha256;
 use crate::util::{ serialize_base64, deserialize_base64 };

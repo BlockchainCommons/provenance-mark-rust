@@ -1,12 +1,12 @@
 use base64::Engine as _;
 use bc_ur::UR;
-use dcbor::{ prelude::*, Date };
+use dcbor::{ Date, prelude::* };
 use serde::ser::Serializer;
 use serde::de::{ Deserializer, Error as DeError };
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::{ProvenanceSeed, PROVENANCE_SEED_LENGTH};
+use crate::{ ProvenanceSeed, PROVENANCE_SEED_LENGTH };
 
 pub fn serialize_base64<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
     where S: Serializer
@@ -81,9 +81,7 @@ pub fn deserialize_iso8601<'de, D>(deserializer: D) -> Result<Date, D::Error>
     Date::from_string(s).map_err(serde::de::Error::custom)
 }
 
-pub fn serialize_ur<S>(ur: &UR, serializer: S) -> Result<S::Ok, S::Error>
-    where S: serde::Serializer
-{
+pub fn serialize_ur<S>(ur: &UR, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     serializer.serialize_str(&ur.to_string())
 }
 

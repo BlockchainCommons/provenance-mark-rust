@@ -2,18 +2,27 @@
 use std::sync::Arc;
 
 use bc_ur::bytewords;
-use dcbor::{prelude::*, Date};
+// use bc_tags;
+use dcbor::{ Date, prelude::* };
 use url::Url;
 use serde::{ Serialize, Deserialize };
-use crate::{crypto_utils::SHA256_SIZE, util::{
-    deserialize_base64, deserialize_cbor, deserialize_iso8601, serialize_base64, serialize_cbor, serialize_iso8601
-}};
+use crate::{
+    crypto_utils::SHA256_SIZE,
+    util::{
+        deserialize_base64,
+        deserialize_cbor,
+        deserialize_iso8601,
+        serialize_base64,
+        serialize_cbor,
+        serialize_iso8601,
+    },
+};
 
 #[cfg(feature = "envelope")]
-use bc_envelope::{with_format_context_mut, FormatContext};
+use bc_envelope::{ with_format_context_mut, FormatContext };
 
 use crate::{ crypto_utils::{ obfuscate, sha256, sha256_prefix }, ProvenanceMarkResolution };
-use anyhow::{ bail, Result, Error };
+use anyhow::{ bail, Result };
 
 // JSON Example:
 // {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"znwVmQ==","res":0,"seq":0}
@@ -154,7 +163,7 @@ impl ProvenanceMark {
         chain_id: Vec<u8>,
         seq: u32,
         date: Date,
-        info: Option<impl CBOREncodable>,
+        info: Option<impl CBOREncodable>
     ) -> Result<Self> {
         if key.len() != res.link_length() {
             bail!("Invalid key length");
@@ -340,7 +349,7 @@ impl ProvenanceMark {
     pub fn from_url_encoding(url_encoding: &str) -> Result<Self> {
         let cbor_data = bytewords::decode(url_encoding, bytewords::Style::Minimal)?;
         let cbor = CBOR::try_from_data(cbor_data)?;
-        Self::try_from(cbor)
+        Ok(Self::try_from(cbor)?)
     }
 }
 
@@ -386,20 +395,17 @@ impl std::fmt::Display for ProvenanceMark {
     }
 }
 
-pub const TAG_PROVENANCE_MARK: TagValue = 0x50524f56;
-
 #[cfg(feature = "envelope")]
 pub fn register_tags_in(context: &mut FormatContext) {
     bc_envelope::register_tags_in(context);
 
     context.tags_mut().set_summarizer(
-        TAG_PROVENANCE_MARK,
+        bc_tags::TAG_PROVENANCE_MARK,
         Arc::new(move |untagged_cbor: CBOR| {
             let provenance_mark = ProvenanceMark::from_untagged_cbor(untagged_cbor)?;
             Ok(provenance_mark.to_string())
         })
     );
-
 }
 
 #[cfg(feature = "envelope")]
@@ -409,11 +415,9 @@ pub fn register_tags() {
     });
 }
 
-pub const PROVENANCE_MARK_TAG: Tag = Tag::with_static_name(0x50524f56, "provenance");
-
 impl CBORTagged for ProvenanceMark {
     fn cbor_tags() -> Vec<Tag> {
-        vec![PROVENANCE_MARK_TAG]
+        tags_for_values(&[bc_tags::TAG_PROVENANCE_MARK])
     }
 }
 
@@ -430,22 +434,22 @@ impl CBORTaggedEncodable for ProvenanceMark {
 }
 
 impl TryFrom<CBOR> for ProvenanceMark {
-    type Error = Error;
+    type Error = dcbor::Error;
 
-    fn try_from(cbor: CBOR) -> Result<Self, Self::Error> {
+    fn try_from(cbor: CBOR) -> dcbor::Result<Self> {
         Self::from_tagged_cbor(cbor)
     }
 }
 
 impl CBORTaggedDecodable for ProvenanceMark {
-    fn from_untagged_cbor(cbor: CBOR) -> Result<Self> {
+    fn from_untagged_cbor(cbor: CBOR) -> dcbor::Result<Self> {
         let v = CBOR::try_into_array(cbor)?;
         if v.len() != 2 {
-            bail!("Invalid provenance mark length");
+            return Err("Invalid provenance mark length".into());
         }
         let res = ProvenanceMarkResolution::try_from(v[0].clone())?;
         let message = CBOR::try_into_byte_string(v[1].clone())?;
-        Self::from_message(res, message)
+        Ok(Self::from_message(res, message)?)
     }
 }
 
