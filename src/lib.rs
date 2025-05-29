@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/provenance-mark/0.8.0")]
+#![doc(html_root_url = "https://docs.rs/provenance-mark/0.9.0")]
 #![warn(rust_2018_idioms)]
 
 //! # Introduction
@@ -19,12 +19,13 @@
 //!
 //! ```toml
 //! [dependencies]
-//! provenance-mark = "0.8.0"
+//! provenance-mark = "0.9.0"
 //! ```
 //!
 //! # Examples
 //!
-//! See the unit tests in the source code for examples of how to use this library.
+//! See the unit tests in the source code for examples of how to use this
+//! library.
 
 mod resolution;
 pub use resolution::*;
@@ -38,10 +39,10 @@ mod seed;
 pub use seed::*;
 mod rng_state;
 pub use rng_state::*;
-mod date;
 mod crypto_utils;
-mod xoshiro256starstar;
+mod date;
 pub mod util;
+mod xoshiro256starstar;
 
 #[cfg(feature = "envelope")]
 mod envelope;
@@ -64,12 +65,13 @@ mod tests {
         expected_id_words: &[&str],
         expected_bytemoji_ids: &[&str],
         expected_urs: &[&str],
-        expected_urls: &[&str]
+        expected_urls: &[&str],
     ) {
         #[cfg(feature = "envelope")]
         crate::register_tags();
 
-        let provenance_gen = ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");
+        let provenance_gen =
+            ProvenanceMarkGenerator::new_with_passphrase(resolution, "Wolf");
         let count = 10;
         // let base_date = Date::from_string("2023-06-20T12:00:00Z").unwrap();
         let calendar = chrono::Utc;
@@ -81,21 +83,25 @@ mod tests {
                         .single()
                         .unwrap()
                         .checked_add_signed(chrono::Duration::days(i))
-                        .unwrap()
+                        .unwrap(),
                 )
             })
             .collect();
 
-        let mut encoded_generator = serde_json::to_string(&provenance_gen).unwrap();
+        let mut encoded_generator =
+            serde_json::to_string(&provenance_gen).unwrap();
 
         let marks = dates
             .iter()
             .map(|date| {
-                let mut generator: ProvenanceMarkGenerator = serde_json
-                    ::from_str(&encoded_generator)
-                    .unwrap();
+                let mut generator: ProvenanceMarkGenerator =
+                    serde_json::from_str(&encoded_generator).unwrap();
 
-                let title = if include_info { Some("Lorem ipsum sit dolor amet.") } else { None };
+                let title = if include_info {
+                    Some("Lorem ipsum sit dolor amet.")
+                } else {
+                    None
+                };
                 let result = generator.next(date.clone(), title);
 
                 encoded_generator = serde_json::to_string(&generator).unwrap();
@@ -137,13 +143,17 @@ mod tests {
             .map(|mark| mark.to_bytewords())
             .collect::<Vec<_>>();
         if expected_bytewords.is_empty() {
-            bytewords.iter().for_each(|byteword| println!("{:?}", byteword));
+            bytewords
+                .iter()
+                .for_each(|byteword| println!("{:?}", byteword));
         } else {
             assert_eq!(bytewords, expected_bytewords);
         }
         let bytewords_marks = bytewords
             .iter()
-            .map(|byteword| ProvenanceMark::from_bytewords(resolution, byteword).unwrap())
+            .map(|byteword| {
+                ProvenanceMark::from_bytewords(resolution, byteword).unwrap()
+            })
             .collect::<Vec<_>>();
         assert_eq!(marks, bytewords_marks);
 
@@ -152,7 +162,9 @@ mod tests {
             .map(|mark| mark.bytewords_identifier(false))
             .collect::<Vec<_>>();
         if expected_id_words.is_empty() {
-            id_words.iter().for_each(|id_word| println!("{:?}", id_word));
+            id_words
+                .iter()
+                .for_each(|id_word| println!("{:?}", id_word));
         } else {
             assert_eq!(id_words, expected_id_words);
         }
@@ -162,7 +174,9 @@ mod tests {
             .map(|mark| mark.bytemoji_identifier(false))
             .collect::<Vec<_>>();
         if expected_bytemoji_ids.is_empty() {
-            bytemoji_ids.iter().for_each(|bytemoji_id| println!("{:?}", bytemoji_id));
+            bytemoji_ids
+                .iter()
+                .for_each(|bytemoji_id| println!("{:?}", bytemoji_id));
         } else {
             assert_eq!(bytemoji_ids, expected_bytemoji_ids);
         }
@@ -191,10 +205,7 @@ mod tests {
             urls.iter().for_each(|url| println!("{:?}", url));
         } else {
             assert_eq!(
-                urls
-                    .iter()
-                    .map(|url| url.to_string())
-                    .collect::<Vec<_>>(),
+                urls.iter().map(|url| url.to_string()).collect::<Vec<_>>(),
                 expected_urls
             );
         }
@@ -307,7 +318,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -407,7 +418,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -507,7 +518,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -607,7 +618,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -707,7 +718,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -807,7 +818,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -907,7 +918,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
@@ -1007,7 +1018,7 @@ mod tests {
             &expected_id_words,
             &expected_bytemoji_ids,
             &expected_urs,
-            &expected_urls
+            &expected_urls,
         );
     }
 
