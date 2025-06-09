@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.9.0"
+provenance-mark = "0.10.0"
 ```
 
 ## Specification

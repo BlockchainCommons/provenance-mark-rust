@@ -401,7 +401,7 @@ pub fn register_tags_in(context: &mut FormatContext) {
 
     context.tags_mut().set_summarizer(
         bc_tags::TAG_PROVENANCE_MARK,
-        Arc::new(move |untagged_cbor: CBOR| {
+        Arc::new(move |untagged_cbor: CBOR, _flat: bool| {
             let provenance_mark = ProvenanceMark::from_untagged_cbor(untagged_cbor)?;
             Ok(provenance_mark.to_string())
         })
