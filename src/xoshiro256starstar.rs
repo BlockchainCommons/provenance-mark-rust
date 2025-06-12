@@ -1,4 +1,6 @@
-use rand_core::{ impls::fill_bytes_via_next, le::read_u64_into, Error, RngCore };
+use rand_core::{
+    Error, RngCore, impls::fill_bytes_via_next, le::read_u64_into,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Xoshiro256StarStar {
@@ -7,13 +9,9 @@ pub struct Xoshiro256StarStar {
 
 #[allow(dead_code)]
 impl Xoshiro256StarStar {
-    pub fn to_state(&self) -> [u64; 4] {
-        self.s
-    }
+    pub fn to_state(&self) -> [u64; 4] { self.s }
 
-    pub fn from_state(state: &[u64; 4]) -> Self {
-        Self { s: *state }
-    }
+    pub fn from_state(state: &[u64; 4]) -> Self { Self { s: *state } }
 
     pub fn to_data(&self) -> [u8; 32] {
         let state = self.s;
@@ -30,9 +28,7 @@ impl Xoshiro256StarStar {
         Self { s }
     }
 
-    pub fn next_byte(&mut self) -> u8 {
-        self.next_u64() as u8
-    }
+    pub fn next_byte(&mut self) -> u8 { self.next_u64() as u8 }
 
     pub fn next_bytes(&mut self, len: usize) -> Vec<u8> {
         (0..len).map(|_| self.next_byte()).collect()
@@ -89,9 +85,10 @@ impl RngCore for Xoshiro256StarStar {
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto_utils::sha256;
     use hex_literal::hex;
+
     use super::*;
+    use crate::crypto_utils::sha256;
 
     #[test]
     fn test_rng() {
@@ -99,16 +96,29 @@ mod tests {
         let digest = sha256(data);
         let mut rng = Xoshiro256StarStar::from_data(&digest);
         let key = rng.next_bytes(32);
-        assert_eq!(key, hex!("b18b446df414ec00714f19cb0f03e45cd3c3d5d071d2e7483ba8627c65b9926a"));
+        assert_eq!(
+            key,
+            hex!(
+                "b18b446df414ec00714f19cb0f03e45cd3c3d5d071d2e7483ba8627c65b9926a"
+            )
+        );
     }
 
     #[test]
     fn test_save_rng_state() {
         let state: [u64; 4] = [
-            17295166580085024720, 422929670265678780, 5577237070365765850, 7953171132032326923,
+            17295166580085024720,
+            422929670265678780,
+            5577237070365765850,
+            7953171132032326923,
         ];
         let data = Xoshiro256StarStar::from_state(&state).to_data();
-        assert_eq!(data, hex!("d0e72cf15ec604f0bcab28594b8cde05dab04ae79053664d0b9dadc201575f6e"));
+        assert_eq!(
+            data,
+            hex!(
+                "d0e72cf15ec604f0bcab28594b8cde05dab04ae79053664d0b9dadc201575f6e"
+            )
+        );
         let state2 = Xoshiro256StarStar::from_data(&data).to_state();
         let data2 = Xoshiro256StarStar::from_state(&state2).to_data();
         assert_eq!(data, data2);

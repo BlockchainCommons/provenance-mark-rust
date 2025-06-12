@@ -1,12 +1,10 @@
-use bc_envelope::prelude::*;
 use anyhow::{Error, Result};
+use bc_envelope::prelude::*;
 
 use crate::ProvenanceMark;
 
 impl EnvelopeEncodable for ProvenanceMark {
-    fn into_envelope(self) -> Envelope {
-        Envelope::new(self.to_cbor())
-    }
+    fn into_envelope(self) -> Envelope { Envelope::new(self.to_cbor()) }
 }
 
 impl TryFrom<Envelope> for ProvenanceMark {

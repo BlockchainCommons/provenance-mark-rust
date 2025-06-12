@@ -1,31 +1,27 @@
 #[cfg(feature = "envelope")]
 use std::sync::Arc;
 
+use anyhow::{Result, bail};
+#[cfg(feature = "envelope")]
+use bc_envelope::{FormatContext, with_format_context_mut};
 use bc_ur::bytewords;
 // use bc_tags;
-use dcbor::{ Date, prelude::* };
+use dcbor::{Date, prelude::*};
+use serde::{Deserialize, Serialize};
 use url::Url;
-use serde::{ Serialize, Deserialize };
+
 use crate::{
-    crypto_utils::SHA256_SIZE,
+    ProvenanceMarkResolution,
+    crypto_utils::{SHA256_SIZE, obfuscate, sha256, sha256_prefix},
     util::{
-        deserialize_base64,
-        deserialize_cbor,
-        deserialize_iso8601,
-        serialize_base64,
-        serialize_cbor,
-        serialize_iso8601,
+        deserialize_base64, deserialize_cbor, deserialize_iso8601,
+        serialize_base64, serialize_cbor, serialize_iso8601,
     },
 };
 
-#[cfg(feature = "envelope")]
-use bc_envelope::{ with_format_context_mut, FormatContext };
-
-use crate::{ crypto_utils::{ obfuscate, sha256, sha256_prefix }, ProvenanceMarkResolution };
-use anyhow::{ bail, Result };
-
 // JSON Example:
-// {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"znwVmQ==","res":0,"seq":0}
+// {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"
+// znwVmQ==","res":0,"seq":0}
 
 #[derive(Serialize, Clone)]
 pub struct ProvenanceMark {
@@ -45,7 +41,11 @@ pub struct ProvenanceMark {
     #[serde(serialize_with = "serialize_base64")]
     hash: Vec<u8>,
 
-    #[serde(default, skip_serializing_if = "Vec::is_empty", serialize_with = "serialize_cbor")]
+    #[serde(
+        default,
+        skip_serializing_if = "Vec::is_empty",
+        serialize_with = "serialize_cbor"
+    )]
     info_bytes: Vec<u8>,
 
     #[serde(skip)]
@@ -56,7 +56,10 @@ pub struct ProvenanceMark {
 }
 
 impl<'de> Deserialize<'de> for ProvenanceMark {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
         #[derive(Deserialize)]
         struct ProvenanceMarkHelper {
             res: ProvenanceMarkResolution,
@@ -74,8 +77,12 @@ impl<'de> Deserialize<'de> for ProvenanceMark {
         }
 
         let helper = ProvenanceMarkHelper::deserialize(deserializer)?;
-        let seq_bytes = helper.res.serialize_seq(helper.seq).map_err(serde::de::Error::custom)?;
-        let date_bytes = helper.res
+        let seq_bytes = helper
+            .res
+            .serialize_seq(helper.seq)
+            .map_err(serde::de::Error::custom)?;
+        let date_bytes = helper
+            .res
             .serialize_date(helper.date.clone())
             .map_err(serde::de::Error::custom)?;
 
@@ -109,31 +116,15 @@ impl std::hash::Hash for ProvenanceMark {
 }
 
 impl ProvenanceMark {
-    pub fn res(&self) -> ProvenanceMarkResolution {
-        self.res
-    }
-    pub fn key(&self) -> &[u8] {
-        &self.key
-    }
-    pub fn hash(&self) -> &[u8] {
-        &self.hash
-    }
-    pub fn chain_id(&self) -> &[u8] {
-        &self.chain_id
-    }
-    pub fn seq_bytes(&self) -> &[u8] {
-        &self.seq_bytes
-    }
-    pub fn date_bytes(&self) -> &[u8] {
-        &self.date_bytes
-    }
+    pub fn res(&self) -> ProvenanceMarkResolution { self.res }
+    pub fn key(&self) -> &[u8] { &self.key }
+    pub fn hash(&self) -> &[u8] { &self.hash }
+    pub fn chain_id(&self) -> &[u8] { &self.chain_id }
+    pub fn seq_bytes(&self) -> &[u8] { &self.seq_bytes }
+    pub fn date_bytes(&self) -> &[u8] { &self.date_bytes }
 
-    pub fn seq(&self) -> u32 {
-        self.seq
-    }
-    pub fn date(&self) -> &Date {
-        &self.date
-    }
+    pub fn seq(&self) -> u32 { self.seq }
+    pub fn date(&self) -> &Date { &self.date }
 
     pub fn message(&self) -> Vec<u8> {
         let payload = [
@@ -142,7 +133,8 @@ impl ProvenanceMark {
             self.seq_bytes.clone(),
             self.date_bytes.clone(),
             self.info_bytes.clone(),
-        ].concat();
+        ]
+        .concat();
         [self.key.clone(), obfuscate(&self.key, payload)].concat()
     }
 
@@ -163,7 +155,7 @@ impl ProvenanceMark {
         chain_id: Vec<u8>,
         seq: u32,
         date: Date,
-        info: Option<impl CBOREncodable>
+        info: Option<impl CBOREncodable>,
     ) -> Result<Self> {
         if key.len() != res.link_length() {
             bail!("Invalid key length");
@@ -192,7 +184,7 @@ impl ProvenanceMark {
             &chain_id,
             &seq_bytes,
             &date_bytes,
-            &info_bytes
+            &info_bytes,
         );
 
         Ok(Self {
@@ -209,7 +201,10 @@ impl ProvenanceMark {
         })
     }
 
-    pub fn from_message(res: ProvenanceMarkResolution, message: Vec<u8>) -> Result<Self> {
+    pub fn from_message(
+        res: ProvenanceMarkResolution,
+        message: Vec<u8>,
+    ) -> Result<Self> {
         if message.len() < res.fixed_length() {
             bail!("Invalid message length");
         }
@@ -248,7 +243,7 @@ impl ProvenanceMark {
         chain_id: impl AsRef<[u8]>,
         seq_bytes: impl AsRef<[u8]>,
         date_bytes: impl AsRef<[u8]>,
-        info_bytes: impl AsRef<[u8]>
+        info_bytes: impl AsRef<[u8]>,
     ) -> Vec<u8> {
         let mut buf = Vec::new();
         buf.extend_from_slice(key.as_ref());
@@ -264,28 +259,21 @@ impl ProvenanceMark {
 
 impl ProvenanceMark {
     /// The first four bytes of the mark's hash as a hex string.
-    pub fn identifier(&self) -> String {
-        hex::encode(&self.hash[..4])
-    }
+    pub fn identifier(&self) -> String { hex::encode(&self.hash[..4]) }
 
     /// The first four bytes of the mark's hash as upper-case ByteWords.
     pub fn bytewords_identifier(&self, prefix: bool) -> String {
-        let s = bytewords::identifier(&self.hash[..4].try_into().unwrap()).to_uppercase();
-        if prefix {
-            format!("🅟 {}", s)
-        } else {
-            s
-        }
+        let s = bytewords::identifier(&self.hash[..4].try_into().unwrap())
+            .to_uppercase();
+        if prefix { format!("🅟 {}", s) } else { s }
     }
 
     /// The first four bytes of the mark's hash as Bytemoji.
     pub fn bytemoji_identifier(&self, prefix: bool) -> String {
-        let s = bytewords::bytemoji_identifier(&self.hash[..4].try_into().unwrap()).to_uppercase();
-        if prefix {
-            format!("🅟 {}", s)
-        } else {
-            s
-        }
+        let s =
+            bytewords::bytemoji_identifier(&self.hash[..4].try_into().unwrap())
+                .to_uppercase();
+        if prefix { format!("🅟 {}", s) } else { s }
     }
 }
 
@@ -335,7 +323,10 @@ impl ProvenanceMark {
         self.to_bytewords_with_style(bytewords::Style::Standard)
     }
 
-    pub fn from_bytewords(res: ProvenanceMarkResolution, bytewords: &str) -> Result<Self> {
+    pub fn from_bytewords(
+        res: ProvenanceMarkResolution,
+        bytewords: &str,
+    ) -> Result<Self> {
         let message = bytewords::decode(bytewords, bytewords::Style::Standard)?;
         Self::from_message(res, message)
     }
@@ -347,17 +338,20 @@ impl ProvenanceMark {
     }
 
     pub fn from_url_encoding(url_encoding: &str) -> Result<Self> {
-        let cbor_data = bytewords::decode(url_encoding, bytewords::Style::Minimal)?;
+        let cbor_data =
+            bytewords::decode(url_encoding, bytewords::Style::Minimal)?;
         let cbor = CBOR::try_from_data(cbor_data)?;
         Ok(Self::try_from(cbor)?)
     }
 }
 
 impl ProvenanceMark {
-    // Example format: ur:provenance/lfaegdtokebznlahftbsnlaxpsdiwecswsrnlsdsdpghrp
+    // Example format:
+    // ur:provenance/lfaegdtokebznlahftbsnlaxpsdiwecswsrnlsdsdpghrp
     pub fn to_url(&self, base: &str) -> Url {
         let mut url = Url::parse(base).unwrap();
-        url.query_pairs_mut().append_pair("provenance", &self.to_url_encoding());
+        url.query_pairs_mut()
+            .append_pair("provenance", &self.to_url_encoding());
         url
     }
 
@@ -378,7 +372,7 @@ impl std::fmt::Debug for ProvenanceMark {
             format!("hash: {}", hex::encode(&self.hash)),
             format!("chainID: {}", hex::encode(&self.chain_id)),
             format!("seq: {}", self.seq),
-            format!("date: {}", self.date.to_string())
+            format!("date: {}", self.date.to_string()),
         ];
 
         if let Some(info) = self.info() {
@@ -402,9 +396,10 @@ pub fn register_tags_in(context: &mut FormatContext) {
     context.tags_mut().set_summarizer(
         bc_tags::TAG_PROVENANCE_MARK,
         Arc::new(move |untagged_cbor: CBOR, _flat: bool| {
-            let provenance_mark = ProvenanceMark::from_untagged_cbor(untagged_cbor)?;
+            let provenance_mark =
+                ProvenanceMark::from_untagged_cbor(untagged_cbor)?;
             Ok(provenance_mark.to_string())
-        })
+        }),
     );
 }
 
@@ -422,9 +417,7 @@ impl CBORTagged for ProvenanceMark {
 }
 
 impl From<ProvenanceMark> for CBOR {
-    fn from(value: ProvenanceMark) -> Self {
-        value.tagged_cbor()
-    }
+    fn from(value: ProvenanceMark) -> Self { value.tagged_cbor() }
 }
 
 impl CBORTaggedEncodable for ProvenanceMark {
@@ -455,9 +448,7 @@ impl CBORTaggedDecodable for ProvenanceMark {
 
 // Convert from an instance reference to an instance.
 impl From<&ProvenanceMark> for ProvenanceMark {
-    fn from(mark: &ProvenanceMark) -> Self {
-        mark.clone()
-    }
+    fn from(mark: &ProvenanceMark) -> Self { mark.clone() }
 }
 
 impl ProvenanceMark {

@@ -1,7 +1,9 @@
-use sha2::{Digest, Sha256};
+use chacha20::{
+    ChaCha20,
+    cipher::{KeyIvInit, StreamCipher},
+};
 use hkdf::Hkdf;
-use chacha20::ChaCha20;
-use chacha20::cipher::{ KeyIvInit, StreamCipher };
+use sha2::{Digest, Sha256};
 
 pub const SHA256_SIZE: usize = 32;
 
@@ -27,7 +29,11 @@ pub fn extend_key(data: impl AsRef<[u8]>) -> [u8; 32] {
 }
 
 /// Computes the HKDF-HMAC-SHA-256 for the given key material.
-pub fn hkdf_hmac_sha256(key_material: impl AsRef<[u8]>, salt: impl AsRef<[u8]>, key_len: usize) -> Vec<u8> {
+pub fn hkdf_hmac_sha256(
+    key_material: impl AsRef<[u8]>,
+    salt: impl AsRef<[u8]>,
+    key_len: usize,
+) -> Vec<u8> {
     let mut key = vec![0u8; key_len];
     let hkdf = Hkdf::<Sha256>::new(Some(salt.as_ref()), key_material.as_ref());
     hkdf.expand(&[], &mut key).unwrap();
@@ -43,7 +49,12 @@ pub fn obfuscate(key: impl AsRef<[u8]>, message: impl AsRef<[u8]>) -> Vec<u8> {
     }
 
     let extended_key = extend_key(key);
-    let iv = extended_key.iter().rev().take(12).copied().collect::<Vec<u8>>();
+    let iv = extended_key
+        .iter()
+        .rev()
+        .take(12)
+        .copied()
+        .collect::<Vec<u8>>();
     let iv2: [u8; 12] = iv.as_slice().try_into().unwrap();
     let mut cipher = ChaCha20::new(&extended_key.into(), &iv2.into());
     let mut buffer = message.to_vec();
@@ -53,15 +64,18 @@ pub fn obfuscate(key: impl AsRef<[u8]>, message: impl AsRef<[u8]>) -> Vec<u8> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use hex_literal::hex;
+
+    use super::*;
 
     #[test]
     fn test_sha256() {
         let data = b"Hello World";
         assert_eq!(
             sha256(data),
-            hex!("a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e")
+            hex!(
+                "a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+            )
         );
     }
 
@@ -70,7 +84,9 @@ mod tests {
         let data = b"Hello World";
         assert_eq!(
             extend_key(data),
-            hex!("813085a508d5fec645abe5a1fb9a23c2a6ac6bef0a99650017b3ef50538dba39")
+            hex!(
+                "813085a508d5fec645abe5a1fb9a23c2a6ac6bef0a99650017b3ef50538dba39"
+            )
         );
     }
 
