@@ -26,7 +26,7 @@ sha2 = "^0.10.6"
 hkdf = "^0.12.3"
 bc-ur = "^0.11.0"
 bc-tags = "^0.4.0"
-bc-envelope = { version = "^0.30.0", optional = true }
+bc-envelope = { version = "^0.32.0", optional = true }
 
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "^1.0.0"
