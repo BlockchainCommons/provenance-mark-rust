@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.11.0"
+provenance-mark = "0.12.0"
 ```
 
 ## Specification
@@ -48,6 +48,10 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.12.0** (July 3, 2025)
+  - Align to dependencies.
+  - Update dcbor imports to use prelude.
 
 ### Roadmap
 
