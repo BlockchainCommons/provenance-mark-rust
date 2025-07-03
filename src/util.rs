@@ -1,6 +1,6 @@
 use base64::Engine as _;
 use bc_ur::UR;
-use dcbor::{Date, prelude::*};
+use dcbor::prelude::*;
 use serde::{
     Deserialize,
     de::{Deserializer, Error as DeError},
@@ -37,8 +37,8 @@ pub fn parse_seed(s: &str) -> Result<ProvenanceSeed, String> {
     Ok(seed)
 }
 
-pub fn parse_date(s: &str) -> Result<dcbor::Date, String> {
-    dcbor::Date::from_string(s).map_err(|e| e.to_string())
+pub fn parse_date(s: &str) -> Result<Date, String> {
+    Date::from_string(s).map_err(|e| e.to_string())
 }
 
 pub fn serialize_cbor<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>

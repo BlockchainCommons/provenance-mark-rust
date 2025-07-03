@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use chrono::{Datelike, Duration, TimeZone, Utc};
-use dcbor::Date;
+use dcbor::prelude::*;
 
 pub trait SerializableDate: Sized {
     fn serialize_2_bytes(&self) -> Result<[u8; 2]>;
@@ -115,10 +115,9 @@ pub fn range_of_days_in_month(year: i32, month: u32) -> std::ops::Range<u32> {
 #[cfg(test)]
 mod tests {
     use chrono::{TimeZone, Timelike, Utc};
-    use dcbor::Date;
     use hex_literal::hex;
 
-    use super::SerializableDate;
+    use super::*;
 
     #[test]
     fn test_2_byte_dates() {

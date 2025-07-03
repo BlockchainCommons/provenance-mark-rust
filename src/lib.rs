@@ -51,7 +51,6 @@ mod envelope;
 mod tests {
     use bc_ur::prelude::*;
     use chrono::TimeZone;
-    use dcbor::Date;
 
     use super::*;
 
