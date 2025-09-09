@@ -1,6 +1,7 @@
-use anyhow::{Result, bail};
 use chrono::{Datelike, Duration, TimeZone, Utc};
 use dcbor::prelude::*;
+
+use crate::{Result, Error};
 
 pub trait SerializableDate: Sized {
     fn serialize_2_bytes(&self) -> Result<[u8; 2]>;
@@ -22,10 +23,10 @@ impl SerializableDate for Date {
 
         let yy = year - 2023;
         if !(0..128).contains(&yy) {
-            bail!("Year out of range");
+            return Err(Error::YearOutOfRange { year });
         }
         if !(1..=12).contains(&month) || !(1..=31).contains(&day) {
-            bail!("Invalid month or day");
+            return Err(Error::InvalidMonthOrDay { year, month, day });
         }
 
         let value = ((yy as u16) << 9) | ((month as u16) << 5) | (day as u16);
@@ -42,13 +43,15 @@ impl SerializableDate for Date {
         if !(1..=12).contains(&month)
             || !range_of_days_in_month(year, month).contains(&day)
         {
-            bail!("Invalid month or day");
+            return Err(Error::InvalidMonthOrDay { year, month, day });
         }
 
         let date = Utc
             .with_ymd_and_hms(year, month, day, 0, 0, 0)
             .single()
-            .ok_or_else(|| anyhow::anyhow!("Invalid date"))?;
+            .ok_or_else(|| Error::InvalidDate {
+                details: format!("Cannot construct date {year}-{month:02}-{day:02}"),
+            })?;
         Ok(Date::from_datetime(date))
     }
 
@@ -58,7 +61,9 @@ impl SerializableDate for Date {
         let duration = self.datetime() - reference_date;
         let seconds = duration.num_seconds();
         let n = u32::try_from(seconds)
-            .map_err(|_| anyhow::anyhow!("Date out of range"))?;
+            .map_err(|_| Error::DateOutOfRange {
+                details: "seconds value too large for u32".to_string(),
+            })?;
         Ok(n.to_be_bytes())
     }
 
@@ -76,10 +81,14 @@ impl SerializableDate for Date {
         let duration = self.datetime() - reference_date;
         let milliseconds = duration.num_milliseconds();
         let n = u64::try_from(milliseconds)
-            .map_err(|_| anyhow::anyhow!("Date out of range"))?;
+            .map_err(|_| Error::DateOutOfRange {
+                details: "milliseconds value too large for u64".to_string(),
+            })?;
 
         if n > 0xe5940a78a7ff {
-            bail!("Date exceeds maximum representable value");
+            return Err(Error::DateOutOfRange {
+                details: "date exceeds maximum representable value".to_string(),
+            });
         }
 
         let bytes = n.to_be_bytes();
@@ -92,7 +101,9 @@ impl SerializableDate for Date {
         let n = u64::from_be_bytes(full_bytes);
 
         if n > 0xe5940a78a7ff {
-            bail!("Date exceeds maximum representable value");
+            return Err(Error::DateOutOfRange {
+                details: "date exceeds maximum representable value".to_string(),
+            });
         }
 
         let reference_date =

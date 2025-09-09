@@ -1,7 +1,6 @@
 #[cfg(feature = "envelope")]
 use std::sync::Arc;
 
-use anyhow::{Result, bail};
 #[cfg(feature = "envelope")]
 use bc_envelope::{FormatContext, with_format_context_mut};
 use bc_ur::bytewords;
@@ -11,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    ProvenanceMarkResolution,
+    ProvenanceMarkResolution, Result, Error,
     crypto_utils::{SHA256_SIZE, obfuscate, sha256, sha256_prefix},
     util::{
         deserialize_base64, deserialize_cbor, deserialize_iso8601,
@@ -56,7 +55,7 @@ pub struct ProvenanceMark {
 }
 
 impl<'de> Deserialize<'de> for ProvenanceMark {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
@@ -158,13 +157,22 @@ impl ProvenanceMark {
         info: Option<impl CBOREncodable>,
     ) -> Result<Self> {
         if key.len() != res.link_length() {
-            bail!("Invalid key length");
+            return Err(Error::InvalidKeyLength {
+                expected: res.link_length(),
+                actual: key.len(),
+            });
         }
         if next_key.len() != res.link_length() {
-            bail!("Invalid next key length");
+            return Err(Error::InvalidNextKeyLength {
+                expected: res.link_length(),
+                actual: next_key.len(),
+            });
         }
         if chain_id.len() != res.link_length() {
-            bail!("Invalid chain ID length");
+            return Err(Error::InvalidChainIdLength {
+                expected: res.link_length(),
+                actual: chain_id.len(),
+            });
         }
 
         let date_bytes = res.serialize_date(date)?;
@@ -206,7 +214,10 @@ impl ProvenanceMark {
         message: Vec<u8>,
     ) -> Result<Self> {
         if message.len() < res.fixed_length() {
-            bail!("Invalid message length");
+            return Err(Error::InvalidMessageLength {
+                expected: res.fixed_length(),
+                actual: message.len(),
+            });
         }
 
         let key = message[res.key_range()].to_vec();
@@ -220,7 +231,7 @@ impl ProvenanceMark {
 
         let info_bytes = payload[res.info_range()].to_vec();
         if !info_bytes.is_empty() && CBOR::try_from_data(&info_bytes).is_err() {
-            bail!("Invalid info CBOR");
+            return Err(Error::InvalidInfoCbor);
         }
         Ok(Self {
             res,
@@ -360,7 +371,9 @@ impl ProvenanceMark {
         if let Some((_, value)) = query {
             Self::from_url_encoding(&value)
         } else {
-            bail!("Missing provenance query parameter");
+            Err(Error::MissingUrlParameter {
+                parameter: "provenance".to_string(),
+            })
         }
     }
 }
@@ -442,7 +455,8 @@ impl CBORTaggedDecodable for ProvenanceMark {
         }
         let res = ProvenanceMarkResolution::try_from(v[0].clone())?;
         let message = CBOR::try_into_byte_string(v[1].clone())?;
-        Ok(Self::from_message(res, message)?)
+        Self::from_message(res, message)
+            .map_err(dcbor::Error::from)
     }
 }
 
