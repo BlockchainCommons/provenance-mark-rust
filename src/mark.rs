@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::{
-    ProvenanceMarkResolution, Result, Error,
+    Error, ProvenanceMarkResolution, Result,
     crypto_utils::{SHA256_SIZE, obfuscate, sha256, sha256_prefix},
     util::{
         deserialize_base64, deserialize_cbor, deserialize_iso8601,
@@ -455,8 +455,7 @@ impl CBORTaggedDecodable for ProvenanceMark {
         }
         let res = ProvenanceMarkResolution::try_from(v[0].clone())?;
         let message = CBOR::try_into_byte_string(v[1].clone())?;
-        Self::from_message(res, message)
-            .map_err(dcbor::Error::from)
+        Self::from_message(res, message).map_err(dcbor::Error::from)
     }
 }
 

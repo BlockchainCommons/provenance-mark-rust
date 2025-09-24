@@ -6,7 +6,7 @@ use std::{
 use dcbor::{Date, prelude::*};
 use serde::{Deserialize, Serialize};
 
-use crate::{Result, Error, date::SerializableDate};
+use crate::{Error, Result, date::SerializableDate};
 
 // LOW (16 bytes)
 // 0000  0000  0000  00  00
@@ -55,7 +55,10 @@ impl TryFrom<u8> for ProvenanceMarkResolution {
             2 => Ok(ProvenanceMarkResolution::Quartile),
             3 => Ok(ProvenanceMarkResolution::High),
             _ => Err(Error::ResolutionError {
-                details: format!("invalid provenance mark resolution value: {}", value),
+                details: format!(
+                    "invalid provenance mark resolution value: {}",
+                    value
+                ),
             }),
         }
     }
@@ -70,8 +73,7 @@ impl TryFrom<CBOR> for ProvenanceMarkResolution {
 
     fn try_from(cbor: CBOR) -> dcbor::Result<Self> {
         let value: u8 = cbor.try_into()?;
-        ProvenanceMarkResolution::try_from(value)
-            .map_err(dcbor::Error::from)
+        ProvenanceMarkResolution::try_from(value).map_err(dcbor::Error::from)
     }
 }
 
@@ -156,7 +158,10 @@ impl ProvenanceMarkResolution {
                 ])
             }
             _ => Err(Error::ResolutionError {
-                details: format!("invalid date length: expected 2, 4, or 6 bytes, got {}", data.len()),
+                details: format!(
+                    "invalid date length: expected 2, 4, or 6 bytes, got {}",
+                    data.len()
+                ),
             }),
         }
     }
@@ -167,7 +172,11 @@ impl ProvenanceMarkResolution {
             2 => {
                 if seq > (u16::MAX as u32) {
                     return Err(Error::ResolutionError {
-                        details: format!("sequence number {} out of range for 2-byte format (max {})", seq, u16::MAX),
+                        details: format!(
+                            "sequence number {} out of range for 2-byte format (max {})",
+                            seq,
+                            u16::MAX
+                        ),
                     });
                 }
                 Ok((seq as u16).to_be_bytes().to_vec())
@@ -187,7 +196,10 @@ impl ProvenanceMarkResolution {
                 Ok(u32::from_be_bytes([data[0], data[1], data[2], data[3]]))
             }
             _ => Err(Error::ResolutionError {
-                details: format!("invalid sequence number length: expected 2 or 4 bytes, got {}", data.len()),
+                details: format!(
+                    "invalid sequence number length: expected 2 or 4 bytes, got {}",
+                    data.len()
+                ),
             }),
         }
     }

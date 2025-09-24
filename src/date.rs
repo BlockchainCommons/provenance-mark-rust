@@ -1,7 +1,7 @@
 use chrono::{Datelike, Duration, TimeZone, Utc};
 use dcbor::prelude::*;
 
-use crate::{Result, Error};
+use crate::{Error, Result};
 
 pub trait SerializableDate: Sized {
     fn serialize_2_bytes(&self) -> Result<[u8; 2]>;
@@ -50,7 +50,9 @@ impl SerializableDate for Date {
             .with_ymd_and_hms(year, month, day, 0, 0, 0)
             .single()
             .ok_or_else(|| Error::InvalidDate {
-                details: format!("Cannot construct date {year}-{month:02}-{day:02}"),
+                details: format!(
+                    "Cannot construct date {year}-{month:02}-{day:02}"
+                ),
             })?;
         Ok(Date::from_datetime(date))
     }
@@ -60,10 +62,9 @@ impl SerializableDate for Date {
             Utc.with_ymd_and_hms(2001, 1, 1, 0, 0, 0).single().unwrap();
         let duration = self.datetime() - reference_date;
         let seconds = duration.num_seconds();
-        let n = u32::try_from(seconds)
-            .map_err(|_| Error::DateOutOfRange {
-                details: "seconds value too large for u32".to_string(),
-            })?;
+        let n = u32::try_from(seconds).map_err(|_| Error::DateOutOfRange {
+            details: "seconds value too large for u32".to_string(),
+        })?;
         Ok(n.to_be_bytes())
     }
 
@@ -80,8 +81,8 @@ impl SerializableDate for Date {
             Utc.with_ymd_and_hms(2001, 1, 1, 0, 0, 0).single().unwrap();
         let duration = self.datetime() - reference_date;
         let milliseconds = duration.num_milliseconds();
-        let n = u64::try_from(milliseconds)
-            .map_err(|_| Error::DateOutOfRange {
+        let n =
+            u64::try_from(milliseconds).map_err(|_| Error::DateOutOfRange {
                 details: "milliseconds value too large for u64".to_string(),
             })?;
 
