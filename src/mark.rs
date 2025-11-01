@@ -18,6 +18,9 @@ use crate::{
     },
 };
 
+#[cfg(feature = "envelope")]
+use bc_envelope::prelude::*;
+
 // JSON Example:
 // {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"
 // znwVmQ==","res":0,"seq":0}
@@ -467,5 +470,26 @@ impl From<&ProvenanceMark> for ProvenanceMark {
 impl ProvenanceMark {
     pub fn fingerprint(&self) -> [u8; SHA256_SIZE] {
         sha256(self.to_cbor_data())
+    }
+}
+
+#[cfg(feature = "envelope")]
+impl From<ProvenanceMark> for Envelope {
+    fn from(mark: ProvenanceMark) -> Self {
+        Envelope::new(mark.to_cbor())
+    }
+}
+
+#[cfg(feature = "envelope")]
+impl TryFrom<Envelope> for ProvenanceMark {
+    type Error = Error;
+
+    fn try_from(envelope: Envelope) -> Result<Self> {
+        let leaf = envelope.subject().try_leaf().map_err(|e| {
+            Error::Cbor(dcbor::Error::Custom(format!("envelope error: {}", e)))
+        })?;
+        let cbor_result: std::result::Result<Self, dcbor::Error> =
+            leaf.try_into();
+        cbor_result.map_err(Error::Cbor)
     }
 }

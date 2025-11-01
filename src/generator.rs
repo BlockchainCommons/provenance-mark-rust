@@ -5,13 +5,17 @@ use dcbor::{Date, prelude::*};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ProvenanceMark, ProvenanceMarkResolution, ProvenanceSeed, RngState,
-    crypto_utils::{extend_key, sha256},
+    Error, ProvenanceMark, ProvenanceMarkResolution, ProvenanceSeed, Result,
+    RngState,
+    crypto_utils::sha256,
     util::{deserialize_base64, serialize_base64},
     xoshiro256starstar::Xoshiro256StarStar,
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg(feature = "envelope")]
+use bc_envelope::prelude::*;
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ProvenanceMarkGenerator {
     res: ProvenanceMarkResolution,
     seed: ProvenanceSeed,
@@ -28,15 +32,25 @@ pub struct ProvenanceMarkGenerator {
 }
 
 impl ProvenanceMarkGenerator {
-    pub fn res(&self) -> &ProvenanceMarkResolution { &self.res }
+    pub fn res(&self) -> &ProvenanceMarkResolution {
+        &self.res
+    }
 
-    pub fn seed(&self) -> &ProvenanceSeed { &self.seed }
+    pub fn seed(&self) -> &ProvenanceSeed {
+        &self.seed
+    }
 
-    pub fn chain_id(&self) -> &[u8] { &self.chain_id }
+    pub fn chain_id(&self) -> &[u8] {
+        &self.chain_id
+    }
 
-    pub fn next_seq(&self) -> u32 { self.next_seq }
+    pub fn next_seq(&self) -> u32 {
+        self.next_seq
+    }
 
-    pub fn rng_state(&self) -> &RngState { &self.rng_state }
+    pub fn rng_state(&self) -> &RngState {
+        &self.rng_state
+    }
 }
 
 impl ProvenanceMarkGenerator {
@@ -48,15 +62,14 @@ impl ProvenanceMarkGenerator {
         let digest1 = sha256(seed.to_bytes().as_ref());
         let chain_id = digest1[..res.link_length()].to_vec();
         let digest2 = sha256(digest1);
-        Self::new(res, seed.clone(), chain_id, 0, digest2.into())
+        Self::new(res, seed.clone(), chain_id, 0, digest2.into()).unwrap()
     }
 
     pub fn new_with_passphrase(
         res: ProvenanceMarkResolution,
         passphrase: &str,
     ) -> Self {
-        let seed_data = extend_key(passphrase.as_bytes());
-        let seed = ProvenanceSeed::from_bytes(seed_data);
+        let seed = ProvenanceSeed::new_with_passphrase(passphrase);
         Self::new_with_seed(res, seed)
     }
 
@@ -81,9 +94,14 @@ impl ProvenanceMarkGenerator {
         chain_id: Vec<u8>,
         next_seq: u32,
         rng_state: RngState,
-    ) -> Self {
-        assert!(chain_id.len() == res.link_length());
-        Self { res, seed, chain_id, next_seq, rng_state }
+    ) -> Result<Self> {
+        if chain_id.len() != res.link_length() {
+            return Err(Error::InvalidChainIdLength {
+                expected: res.link_length(),
+                actual: chain_id.len(),
+            });
+        }
+        Ok(Self { res, seed, chain_id, next_seq, rng_state })
     }
 
     pub fn next(
@@ -134,5 +152,50 @@ impl std::fmt::Display for ProvenanceMarkGenerator {
             self.next_seq,
             self.rng_state
         )
+    }
+}
+
+#[cfg(feature = "envelope")]
+impl From<ProvenanceMarkGenerator> for Envelope {
+    fn from(generator: ProvenanceMarkGenerator) -> Self {
+        Envelope::new(CBOR::to_byte_string(generator.chain_id()))
+            .add_type("provenance-generator")
+            .add_assertion("res", generator.res().to_cbor())
+            .add_assertion("seed", generator.seed().to_cbor())
+            .add_assertion("next-seq", generator.next_seq())
+            .add_assertion("rng-state", generator.rng_state().to_cbor())
+    }
+}
+
+#[cfg(feature = "envelope")]
+impl TryFrom<Envelope> for ProvenanceMarkGenerator {
+    type Error = Error;
+
+    fn try_from(envelope: Envelope) -> Result<Self> {
+        envelope.check_type_envelope("provenance-generator")?;
+        let chain_id: Vec<u8> = envelope.subject().try_byte_string()?;
+        const EXPECTED_KEY_COUNT: usize = 5;
+        let assertion_count = envelope.assertions().len();
+        if assertion_count != EXPECTED_KEY_COUNT {
+            return Err(Error::ExtraKeys(EXPECTED_KEY_COUNT, assertion_count));
+        }
+        let res: ProvenanceMarkResolution = envelope
+            .object_for_predicate("res")?
+            .try_leaf()?
+            .try_into()?;
+        let seed: ProvenanceSeed = envelope
+            .object_for_predicate("seed")?
+            .try_leaf()?
+            .try_into()?;
+        let next_seq: u32 = envelope
+            .object_for_predicate("next-seq")?
+            .try_leaf()?
+            .try_into()?;
+        let rng_state: RngState = envelope
+            .object_for_predicate("rng-state")?
+            .try_leaf()?
+            .try_into()?;
+
+        ProvenanceMarkGenerator::new(res, seed, chain_id, next_seq, rng_state)
     }
 }

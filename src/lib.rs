@@ -46,9 +46,6 @@ mod date;
 pub mod util;
 mod xoshiro256starstar;
 
-#[cfg(feature = "envelope")]
-mod envelope;
-
 #[cfg(test)]
 mod tests {
     use bc_ur::prelude::*;
@@ -1031,5 +1028,52 @@ mod tests {
     #[test]
     fn test_html_root_url() {
         version_sync::assert_html_root_url_updated!("src/lib.rs");
+    }
+
+    #[cfg(feature = "envelope")]
+    use bc_envelope::prelude::*;
+
+    #[cfg(feature = "envelope")]
+    use indoc::indoc;
+
+    #[test]
+    #[cfg(feature = "envelope")]
+    fn test_envelope() {
+        let seed = ProvenanceSeed::new_with_passphrase("test");
+        let date = Date::from_string("2025-10-26").unwrap();
+
+        let mut generator = ProvenanceMarkGenerator::new_with_seed(
+            ProvenanceMarkResolution::High,
+            seed,
+        );
+        let mark = generator.next(date, Some("Info field content"));
+
+        let gen_envelope = generator.clone().into_envelope();
+        // println!("{}", gen_envelope.format());
+        let expected = indoc! {r#"
+            Bytes(32) [
+                'isA': "provenance-generator"
+                "next-seq": 1
+                "res": 3
+                "rng-state": Bytes(32)
+                "seed": Bytes(32)
+            ]
+        "#}.trim();
+        assert_eq!(gen_envelope.format(), expected);
+        let generator_2 =
+            ProvenanceMarkGenerator::try_from(gen_envelope).unwrap();
+        assert_eq!(generator, generator_2);
+
+        let mark_envelope = mark.clone().into_envelope();
+        // println!("{}", mark_envelope.format());
+        let expected = indoc! {r#"
+            1347571542([3, h'b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc66e7ef6821f5fe3f4ac9b4754e64c3789845a661e394ab354808269d8ad1a1188ed08f554d365ea9f1adb768a02878a2b83eb314f020ff6b0310d849c39ad184d9d5c39a0b55666e27b0105ddf9aa8f116bc182e5d4e36cf7f97b8ef4f'])
+        "#}.trim();
+        assert_eq!(mark_envelope.format(), expected);
+        // println!("{:?}", mark);
+        let expected = indoc! {r#"
+            ProvenanceMark(key: b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc, hash: 59def089a4d373a2d3f6a449c6758f62ba55cda64c7faf01c1c74a1130d3c1ee, chainID: b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc, seq: 0, date: 2025-10-26, info: "Info field content")
+        "#}.trim();
+        assert_eq!(format!("{:?}", mark), expected);
     }
 }

@@ -2,6 +2,26 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
+    /// Invalid Seed length
+    #[error("invalid seed length: expected 32 bytes, got {actual} bytes")]
+    InvalidSeedLength { actual: usize },
+
+    /// Duplicate key
+    #[error("duplicate key: {0}")]
+    DuplicateKey(String),
+
+    /// Missing key
+    #[error("missing key: {0}")]
+    MissingKey(String),
+
+    /// Invalid key
+    #[error("invalid key: {0}")]
+    InvalidKey(String),
+
+    /// Extra keys
+    #[error("wrong number of keys: expected {0}, got {1}")]
+    ExtraKeys(usize, usize),
+
     /// Invalid key length for the given resolution
     #[error("invalid key length: expected {expected}, got {actual}")]
     InvalidKeyLength { expected: usize, actual: usize },
@@ -73,6 +93,10 @@ pub enum Error {
     /// Integer conversion error
     #[error("integer conversion error: {0}")]
     TryFromInt(#[from] std::num::TryFromIntError),
+
+    #[cfg(feature = "envelope")]
+    #[error("envelope error: {0}")]
+    Envelope(#[from] bc_envelope::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
