@@ -1,6 +1,6 @@
 [package]
 name = "provenance-mark"
-version = "0.14.0"
+version = "0.15.0"
 edition = "2024"
 description = "A cryptographically-secured system for establishing and verifying the authenticity of works"
 authors = ["Blockchain Commons"]

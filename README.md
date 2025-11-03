@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.14.0"
+provenance-mark = "0.15.0"
 ```
 
 ## Specification
@@ -48,6 +48,11 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.15.0** (November 3, 2025)
+  - Align to dependencies.
+  - Add Envelope support for ProvenanceMarkGenerator.
+  - Fix test to work correctly with global tag registration.
 
 - **0.14.0** (October 20, 2025)
   - Align to dependencies.
