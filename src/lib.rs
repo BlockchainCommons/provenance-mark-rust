@@ -1039,6 +1039,8 @@ mod tests {
     #[test]
     #[cfg(feature = "envelope")]
     fn test_envelope() {
+        crate::register_tags();
+
         let seed = ProvenanceSeed::new_with_passphrase("test");
         let date = Date::from_string("2025-10-26").unwrap();
 
@@ -1058,7 +1060,8 @@ mod tests {
                 "rng-state": Bytes(32)
                 "seed": Bytes(32)
             ]
-        "#}.trim();
+        "#}
+        .trim();
         assert_eq!(gen_envelope.format(), expected);
         let generator_2 =
             ProvenanceMarkGenerator::try_from(gen_envelope).unwrap();
@@ -1066,9 +1069,7 @@ mod tests {
 
         let mark_envelope = mark.clone().into_envelope();
         // println!("{}", mark_envelope.format());
-        let expected = indoc! {r#"
-            1347571542([3, h'b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc66e7ef6821f5fe3f4ac9b4754e64c3789845a661e394ab354808269d8ad1a1188ed08f554d365ea9f1adb768a02878a2b83eb314f020ff6b0310d849c39ad184d9d5c39a0b55666e27b0105ddf9aa8f116bc182e5d4e36cf7f97b8ef4f'])
-        "#}.trim();
+        let expected = "ProvenanceMark(59def089)";
         assert_eq!(mark_envelope.format(), expected);
         // println!("{:?}", mark);
         let expected = indoc! {r#"
