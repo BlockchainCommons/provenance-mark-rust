@@ -1,21 +1,85 @@
 use std::collections::{HashMap, HashSet};
 
+use serde::Serialize;
+
 use crate::ProvenanceMark;
 
+// Helper module for serializing ProvenanceMark as UR string
+mod provenance_mark_as_ur {
+    use bc_ur::UREncodable;
+    use serde::Serializer;
+
+    use crate::ProvenanceMark;
+
+    pub fn serialize<S>(
+        mark: &ProvenanceMark,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&mark.ur_string())
+    }
+}
+
+// Helper module for serializing Vec<ProvenanceMark> as Vec<UR string>
+mod provenance_marks_as_ur {
+    use bc_ur::UREncodable;
+    use serde::Serializer;
+
+    use crate::ProvenanceMark;
+
+    pub fn serialize<S>(
+        marks: &[ProvenanceMark],
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        let mut seq = serializer.serialize_seq(Some(marks.len()))?;
+        for mark in marks {
+            seq.serialize_element(&mark.ur_string())?;
+        }
+        seq.end()
+    }
+}
+
+// Helper module for serializing dcbor::Date as ISO8601 string
+mod date_as_iso8601 {
+    use serde::Serializer;
+
+    pub fn serialize<S>(
+        date: &dcbor::Date,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&date.to_string())
+    }
+}
+
 /// Issue flagged during validation
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "type", content = "data")]
 pub enum ValidationIssue {
-    /// Exact duplicate mark found
-    ExactDuplicate,
     /// Hash mismatch between consecutive marks
-    HashMismatch { expected: Vec<u8>, actual: Vec<u8> },
+    HashMismatch {
+        #[serde(with = "hex")]
+        expected: Vec<u8>,
+        #[serde(with = "hex")]
+        actual: Vec<u8>,
+    },
     /// Key mismatch between consecutive marks
     KeyMismatch,
     /// Sequence number gap
     SequenceGap { expected: u32, actual: u32 },
     /// Date ordering violation
     DateOrdering {
+        #[serde(serialize_with = "date_as_iso8601::serialize")]
         previous: dcbor::Date,
+        #[serde(serialize_with = "date_as_iso8601::serialize")]
         next: dcbor::Date,
     },
     /// Non-genesis mark at sequence 0
@@ -27,9 +91,6 @@ pub enum ValidationIssue {
 impl std::fmt::Display for ValidationIssue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ValidationIssue::ExactDuplicate => {
-                write!(f, "exact duplicate mark found")
-            }
             ValidationIssue::HashMismatch { expected, actual } => {
                 write!(
                     f,
@@ -71,8 +132,9 @@ impl std::fmt::Display for ValidationIssue {
 impl std::error::Error for ValidationIssue {}
 
 /// A mark with any issues flagged during validation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct FlaggedMark {
+    #[serde(serialize_with = "provenance_mark_as_ur::serialize")]
     mark: ProvenanceMark,
     issues: Vec<ValidationIssue>,
 }
@@ -89,7 +151,7 @@ impl FlaggedMark {
 }
 
 /// Report for a contiguous sequence of marks within a chain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SequenceReport {
     start_seq: u32,
     end_seq: u32,
@@ -103,10 +165,12 @@ impl SequenceReport {
 }
 
 /// Report for a chain of marks with the same chain ID
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ChainReport {
+    #[serde(with = "hex")]
     chain_id: Vec<u8>,
     has_genesis: bool,
+    #[serde(serialize_with = "provenance_marks_as_ur::serialize")]
     marks: Vec<ProvenanceMark>,
     sequences: Vec<SequenceReport>,
 }
@@ -122,22 +186,20 @@ impl ChainReport {
 }
 
 /// Complete validation report
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct ValidationReport {
-    original_marks: Vec<ProvenanceMark>,
-    deduplicated_marks: Vec<ProvenanceMark>,
+    #[serde(serialize_with = "provenance_marks_as_ur::serialize")]
+    marks: Vec<ProvenanceMark>,
     chains: Vec<ChainReport>,
 }
 
 impl ValidationReport {
-    pub fn original_marks(&self) -> &[ProvenanceMark] { &self.original_marks }
-    pub fn deduplicated_marks(&self) -> &[ProvenanceMark] { &self.deduplicated_marks }
+    pub fn marks(&self) -> &[ProvenanceMark] { &self.marks }
     pub fn chains(&self) -> &[ChainReport] { &self.chains }
 
     /// Validate a collection of provenance marks
+    /// Validate a collection of provenance marks
     pub fn validate(marks: Vec<ProvenanceMark>) -> Self {
-        let original_marks = marks.clone();
-
         // Deduplicate exact duplicates
         let mut seen = HashSet::new();
         let mut deduplicated_marks = Vec::new();
@@ -182,7 +244,7 @@ impl ValidationReport {
         // Sort chains by chain ID for consistent output
         chains.sort_by(|a, b| a.chain_id.cmp(&b.chain_id));
 
-        ValidationReport { original_marks, deduplicated_marks, chains }
+        ValidationReport { marks: deduplicated_marks, chains }
     }
 
     fn build_sequence_bins(marks: &[ProvenanceMark]) -> Vec<SequenceReport> {

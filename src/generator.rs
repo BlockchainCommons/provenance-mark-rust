@@ -1,7 +1,9 @@
 use std::fmt::Formatter;
 
+#[cfg(feature = "envelope")]
+use bc_envelope::prelude::*;
 use bc_rand::RandomNumberGenerator;
-use dcbor::{Date, prelude::*};
+use dcbor::Date;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -11,9 +13,6 @@ use crate::{
     util::{deserialize_base64, serialize_base64},
     xoshiro256starstar::Xoshiro256StarStar,
 };
-
-#[cfg(feature = "envelope")]
-use bc_envelope::prelude::*;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct ProvenanceMarkGenerator {
@@ -32,25 +31,15 @@ pub struct ProvenanceMarkGenerator {
 }
 
 impl ProvenanceMarkGenerator {
-    pub fn res(&self) -> &ProvenanceMarkResolution {
-        &self.res
-    }
+    pub fn res(&self) -> &ProvenanceMarkResolution { &self.res }
 
-    pub fn seed(&self) -> &ProvenanceSeed {
-        &self.seed
-    }
+    pub fn seed(&self) -> &ProvenanceSeed { &self.seed }
 
-    pub fn chain_id(&self) -> &[u8] {
-        &self.chain_id
-    }
+    pub fn chain_id(&self) -> &[u8] { &self.chain_id }
 
-    pub fn next_seq(&self) -> u32 {
-        self.next_seq
-    }
+    pub fn next_seq(&self) -> u32 { self.next_seq }
 
-    pub fn rng_state(&self) -> &RngState {
-        &self.rng_state
-    }
+    pub fn rng_state(&self) -> &RngState { &self.rng_state }
 }
 
 impl ProvenanceMarkGenerator {

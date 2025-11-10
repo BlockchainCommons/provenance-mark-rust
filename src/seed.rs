@@ -1,10 +1,14 @@
 use bc_rand::{
     RandomNumberGenerator, SecureRandomNumberGenerator, rng_random_data,
 };
-use serde::{Deserialize, Serialize};
 use dcbor::prelude::*;
+use serde::{Deserialize, Serialize};
 
-use crate::{crypto_utils::extend_key, util::{deserialize_block, serialize_block}, Error, Result};
+use crate::{
+    Error, Result,
+    crypto_utils::extend_key,
+    util::{deserialize_block, serialize_block},
+};
 
 pub const PROVENANCE_SEED_LENGTH: usize = 32;
 
@@ -45,9 +49,7 @@ impl ProvenanceSeed {
 
     pub fn from_slice(bytes: &[u8]) -> Result<Self> {
         if bytes.len() != PROVENANCE_SEED_LENGTH {
-            return Err(Error::InvalidSeedLength {
-                actual: bytes.len(),
-            });
+            return Err(Error::InvalidSeedLength { actual: bytes.len() });
         }
         let mut seed_bytes = [0u8; PROVENANCE_SEED_LENGTH];
         seed_bytes.copy_from_slice(bytes);

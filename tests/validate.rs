@@ -1,12 +1,19 @@
 use chrono::TimeZone;
 use dcbor::Date;
+use indoc::indoc;
 use provenance_mark::*;
+
+#[macro_use]
+mod common;
 
 fn create_test_marks(
     count: usize,
     resolution: ProvenanceMarkResolution,
     passphrase: &str,
 ) -> Vec<ProvenanceMark> {
+    #[cfg(feature = "envelope")]
+    provenance_mark::register_tags();
+
     let mut generator =
         ProvenanceMarkGenerator::new_with_passphrase(resolution, passphrase);
     let calendar = chrono::Utc;
@@ -29,9 +36,14 @@ fn create_test_marks(
 #[test]
 fn test_validate_empty() {
     let report = ProvenanceMark::validate(vec![]);
-    assert_eq!(report.original_marks().len(), 0);
-    assert_eq!(report.deduplicated_marks().len(), 0);
-    assert_eq!(report.chains().len(), 0);
+
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [],
+          "chains": []
+        }"#}.trim());
 }
 
 #[test]
@@ -39,20 +51,35 @@ fn test_validate_single_mark() {
     let marks = create_test_marks(1, ProvenanceMarkResolution::Low, "test");
     let report = ProvenanceMark::validate(marks.clone());
 
-    assert_eq!(report.original_marks().len(), 1);
-    assert_eq!(report.deduplicated_marks().len(), 1);
-    assert_eq!(report.chains().len(), 1);
-
-    let chain = &report.chains()[0];
-    assert!(chain.has_genesis());
-    assert_eq!(chain.marks().len(), 1);
-    assert_eq!(chain.sequences().len(), 1);
-
-    let seq = &chain.sequences()[0];
-    assert_eq!(seq.start_seq(), 0);
-    assert_eq!(seq.end_seq(), 0);
-    assert_eq!(seq.marks().len(), 1);
-    assert!(seq.marks()[0].issues().is_empty());
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -60,28 +87,60 @@ fn test_validate_valid_sequence() {
     let marks = create_test_marks(5, ProvenanceMarkResolution::Low, "test");
     let report = ProvenanceMark::validate(marks.clone());
 
-    assert_eq!(report.original_marks().len(), 5);
-    assert_eq!(report.deduplicated_marks().len(), 5);
-    assert_eq!(report.chains().len(), 1);
-
-    let chain = &report.chains()[0];
-    assert!(chain.has_genesis());
-    assert_eq!(chain.marks().len(), 5);
-    assert_eq!(chain.sequences().len(), 1);
-
-    let seq = &chain.sequences()[0];
-    assert_eq!(seq.start_seq(), 0);
-    assert_eq!(seq.end_seq(), 4);
-    assert_eq!(seq.marks().len(), 5);
-
-    // No issues in a valid sequence
-    for flagged_mark in seq.marks() {
-        assert!(
-            flagged_mark.issues().is_empty(),
-            "Expected no issues, got: {:?}",
-            flagged_mark.issues()
-        );
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+            "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+            "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 4,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -96,12 +155,48 @@ fn test_validate_deduplication() {
 
     let report = ProvenanceMark::validate(marks_with_dups);
 
-    assert_eq!(report.original_marks().len(), 6);
-    assert_eq!(report.deduplicated_marks().len(), 3);
-    assert_eq!(report.chains().len(), 1);
-
-    let chain = &report.chains()[0];
-    assert_eq!(chain.marks().len(), 3);
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -114,16 +209,80 @@ fn test_validate_multiple_chains() {
 
     let report = ProvenanceMark::validate(all_marks);
 
-    assert_eq!(report.original_marks().len(), 6);
-    assert_eq!(report.deduplicated_marks().len(), 6);
-    assert_eq!(report.chains().len(), 2);
-
-    // Both chains should have genesis marks
-    for chain in report.chains() {
-        assert!(chain.has_genesis());
-        assert_eq!(chain.marks().len(), 3);
-        assert_eq!(chain.sequences().len(), 1);
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdotfmbeuerniolpveenmowliegyfrfrwnfzntnbwe",
+            "ur:provenance/lfaegdztfetoehnyjswzsopecewkqdiskshfnyndiemkld",
+            "ur:provenance/lfaegdenrdietbenskbesbdiiefgwkuoqzldbecpidhfrt",
+            "ur:provenance/lfaegdknnsfhhylrgytdhtsnheskzepmctgrwnlyjeyngh",
+            "ur:provenance/lfaegdrtckinuywdosecpedtbnismdcllyvsbbplkpspyl",
+            "ur:provenance/lfaegdrevlpmticnmkbafsinmeonvycydphernwerppefs"
+          ],
+          "chains": [
+            {
+              "chain_id": "7a9c3f5e",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdknnsfhhylrgytdhtsnheskzepmctgrwnlyjeyngh",
+                "ur:provenance/lfaegdrtckinuywdosecpedtbnismdcllyvsbbplkpspyl",
+                "ur:provenance/lfaegdrevlpmticnmkbafsinmeonvycydphernwerppefs"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdknnsfhhylrgytdhtsnheskzepmctgrwnlyjeyngh",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrtckinuywdosecpedtbnismdcllyvsbbplkpspyl",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrevlpmticnmkbafsinmeonvycydphernwerppefs",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "chain_id": "a33e10de",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdotfmbeuerniolpveenmowliegyfrfrwnfzntnbwe",
+                "ur:provenance/lfaegdztfetoehnyjswzsopecewkqdiskshfnyndiemkld",
+                "ur:provenance/lfaegdenrdietbenskbesbdiiefgwkuoqzldbecpidhfrt"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdotfmbeuerniolpveenmowliegyfrfrwnfzntnbwe",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdztfetoehnyjswzsopecewkqdiskshfnyndiemkld",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdenrdietbenskbesbdiiefgwkuoqzldbecpidhfrt",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -135,10 +294,54 @@ fn test_validate_missing_genesis() {
 
     let report = ProvenanceMark::validate(marks_no_genesis);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-    assert!(!chain.has_genesis());
-    assert_eq!(chain.marks().len(), 4);
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+            "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+            "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": false,
+              "marks": [
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 1,
+                  "end_seq": 4,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -155,31 +358,68 @@ fn test_validate_sequence_gap() {
 
     let report = ProvenanceMark::validate(marks_with_gap);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-
-    // Should have 2 sequences: [0,1] and [3,4]
-    assert_eq!(chain.sequences().len(), 2);
-
-    let seq1 = &chain.sequences()[0];
-    assert_eq!(seq1.start_seq(), 0);
-    assert_eq!(seq1.end_seq(), 1);
-    assert_eq!(seq1.marks().len(), 2);
-
-    let seq2 = &chain.sequences()[1];
-    assert_eq!(seq2.start_seq(), 3);
-    assert_eq!(seq2.end_seq(), 4);
-    assert_eq!(seq2.marks().len(), 2);
-
-    // First mark of second sequence should have a SequenceGap issue
-    assert_eq!(seq2.marks()[0].issues().len(), 1);
-    match &seq2.marks()[0].issues()[0] {
-        ValidationIssue::SequenceGap { expected, actual } => {
-            assert_eq!(*expected, 2);
-            assert_eq!(*actual, 3);
-        }
-        other => panic!("Expected SequenceGap issue, got {:?}", other),
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+            "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 3,
+                  "end_seq": 4,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                      "issues": [
+                        {
+                          "type": "SequenceGap",
+                          "data": {
+                            "expected": 2,
+                            "actual": 3
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -197,18 +437,60 @@ fn test_validate_out_of_order() {
 
     let report = ProvenanceMark::validate(marks_out_of_order);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-
-    // After sorting, marks should be in correct sequence order
-    assert_eq!(chain.marks()[0].seq(), 0);
-    assert_eq!(chain.marks()[1].seq(), 1);
-    assert_eq!(chain.marks()[2].seq(), 2);
-    assert_eq!(chain.marks()[3].seq(), 3);
-    assert_eq!(chain.marks()[4].seq(), 4);
-
-    // Should form one valid sequence since sorting fixes the order
-    assert_eq!(chain.sequences().len(), 1);
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+            "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 4,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -225,8 +507,56 @@ fn test_validate_hash_mismatch() {
 
     let report = ProvenanceMark::validate(mixed_marks);
 
-    // Should have 2 separate chains since chain IDs differ
-    assert_eq!(report.chains().len(), 2);
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam"
+          ],
+          "chains": [
+            {
+              "chain_id": "8925375b",
+              "has_genesis": false,
+              "marks": [
+                "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 1,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -239,14 +569,48 @@ fn test_validate_date_ordering_violation() {
 
     let report = ProvenanceMark::validate(marks);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-    assert_eq!(chain.sequences().len(), 1);
-
-    // All marks should have no issues
-    for flagged_mark in chain.sequences()[0].marks() {
-        assert!(flagged_mark.issues().is_empty());
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -264,26 +628,88 @@ fn test_validate_multiple_sequences_in_chain() {
 
     let report = ProvenanceMark::validate(marks_with_gaps);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-    assert_eq!(chain.sequences().len(), 3);
-
-    // First sequence: [0,1]
-    assert_eq!(chain.sequences()[0].start_seq(), 0);
-    assert_eq!(chain.sequences()[0].end_seq(), 1);
-    assert_eq!(chain.sequences()[0].marks().len(), 2);
-
-    // Second sequence: [3,4]
-    assert_eq!(chain.sequences()[1].start_seq(), 3);
-    assert_eq!(chain.sequences()[1].end_seq(), 4);
-    assert_eq!(chain.sequences()[1].marks().len(), 2);
-    assert_eq!(chain.sequences()[1].marks()[0].issues().len(), 1);
-
-    // Third sequence: [6]
-    assert_eq!(chain.sequences()[2].start_seq(), 6);
-    assert_eq!(chain.sequences()[2].end_seq(), 6);
-    assert_eq!(chain.sequences()[2].marks().len(), 1);
-    assert_eq!(chain.sequences()[2].marks()[0].issues().len(), 1);
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+            "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+            "ur:provenance/lfaegdwkltwzolasuomobntaryinjzcyrocsfskkrtmyam"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                "ur:provenance/lfaegdwkltwzolasuomobntaryinjzcyrocsfskkrtmyam"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 3,
+                  "end_seq": 4,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdhsvtleetlatsmwwdndmnjlaxonsfdewmghpybzbg",
+                      "issues": [
+                        {
+                          "type": "SequenceGap",
+                          "data": {
+                            "expected": 2,
+                            "actual": 3
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrkkilkylsrendmkniaeejyrhndlyvednzckpsbtk",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 6,
+                  "end_seq": 6,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdwkltwzolasuomobntaryinjzcyrocsfskkrtmyam",
+                      "issues": [
+                        {
+                          "type": "SequenceGap",
+                          "data": {
+                            "expected": 5,
+                            "actual": 6
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -306,15 +732,10 @@ fn test_validate_chain_id_hex() {
     let marks = create_test_marks(2, ProvenanceMarkResolution::Low, "test");
     let report = ProvenanceMark::validate(marks.clone());
 
-    assert_eq!(report.chains().len(), 1);
     let chain = &report.chains()[0];
-
-    // Chain ID should be raw bytes
-    assert!(!chain.chain_id().is_empty());
-    assert_eq!(chain.chain_id(), marks[0].chain_id());
-
-    // Hex encoding is available via helper method
     let chain_id_hex = chain.chain_id_hex();
+
+    // Verify hex encoding
     assert!(chain_id_hex.chars().all(|c| c.is_ascii_hexdigit()));
     assert_eq!(chain_id_hex, hex::encode(marks[0].chain_id()));
 }
@@ -343,14 +764,48 @@ fn test_validate_with_info() {
 
     let report = ProvenanceMark::validate(marks);
 
-    assert_eq!(report.chains().len(), 1);
-    let chain = &report.chains()[0];
-    assert_eq!(chain.sequences().len(), 1);
-
-    // Marks with info should still validate correctly
-    for flagged_mark in chain.sequences()[0].marks() {
-        assert!(flagged_mark.issues().is_empty());
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaehdcypaimkerydihsaedesbglvlrsgdmocfdpveksstlbrprscahlihyntoaxvtem",
+            "ur:provenance/lfaehdcyecgldtsrbbfgsbetsrsgsafwrntdrtkohdhntnwdvtcsatnbkiythefdkiso",
+            "ur:provenance/lfaehdcybwatptqzoyrkdmptfntsjsqdpmpmrfoylewnlpjnhdwzadnycljncflozsfy"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaehdcypaimkerydihsaedesbglvlrsgdmocfdpveksstlbrprscahlihyntoaxvtem",
+                "ur:provenance/lfaehdcyecgldtsrbbfgsbetsrsgsafwrntdrtkohdhntnwdvtcsatnbkiythefdkiso",
+                "ur:provenance/lfaehdcybwatptqzoyrkdmptfntsjsqdpmpmrfoylewnlpjnhdwzadnycljncflozsfy"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaehdcypaimkerydihsaedesbglvlrsgdmocfdpveksstlbrprscahlihyntoaxvtem",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaehdcyecgldtsrbbfgsbetsrsgsafwrntdrtkohdhntnwdvtcsatnbkiythefdkiso",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaehdcybwatptqzoyrkdmptfntsjsqdpmpmrfoylewnlpjnhdwzadnycljncflozsfy",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -366,12 +821,94 @@ fn test_validate_sorted_chains() {
 
     let report = ProvenanceMark::validate(all_marks);
 
-    assert_eq!(report.chains().len(), 3);
-
-    // Chains should be sorted by chain ID (raw bytes)
-    for i in 1..report.chains().len() {
-        assert!(report.chains()[i - 1].chain_id() <= report.chains()[i].chain_id());
-    }
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdcktndeltrtspprmhkptlfdwfgylsjljzwtahlpsf",
+            "ur:provenance/lfaegdrslnurdeknftkscnlphnhgldcxnnahwddiaavyda",
+            "ur:provenance/lfaegdfltogtdmfpdphlttkilywyfntidsamrkmuioteid",
+            "ur:provenance/lfaegdntjopfzttddtsrkirkdytlkirhisiyidimdmwnkg",
+            "ur:provenance/lfaegdfylajldrntasvyttgljtsbsoghdafzwfcawmgede",
+            "ur:provenance/lfaegdgrrtjorhmuzshlvsfdldchoxbntlsrstoyidjepm"
+          ],
+          "chains": [
+            {
+              "chain_id": "1eda2887",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdcktndeltrtspprmhkptlfdwfgylsjljzwtahlpsf",
+                "ur:provenance/lfaegdrslnurdeknftkscnlphnhgldcxnnahwddiaavyda"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdcktndeltrtspprmhkptlfdwfgylsjljzwtahlpsf",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdrslnurdeknftkscnlphnhgldcxnnahwddiaavyda",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "chain_id": "44806f2a",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdfylajldrntasvyttgljtsbsoghdafzwfcawmgede",
+                "ur:provenance/lfaegdgrrtjorhmuzshlvsfdldchoxbntlsrstoyidjepm"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdfylajldrntasvyttgljtsbsoghdafzwfcawmgede",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdgrrtjorhmuzshlvsfdldchoxbntlsrstoyidjepm",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "chain_id": "47ce4d2e",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdfltogtdmfpdphlttkilywyfntidsamrkmuioteid",
+                "ur:provenance/lfaegdntjopfzttddtsrkirkdytlkirhisiyidimdmwnkg"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdfltogtdmfpdphlttkilywyfntidsamrkmuioteid",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdntjopfzttddtsrkirkdytlkirhisiyidimdmwnkg",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
 
 #[test]
@@ -380,10 +917,329 @@ fn test_validate_genesis_check() {
 
     // With genesis
     let report_with_genesis = ProvenanceMark::validate(marks.clone());
-    assert!(report_with_genesis.chains()[0].has_genesis());
+
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report_with_genesis).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 
     // Without genesis
     let marks_no_genesis: Vec<_> = marks.into_iter().skip(1).collect();
     let report_no_genesis = ProvenanceMark::validate(marks_no_genesis);
-    assert!(!report_no_genesis.chains()[0].has_genesis());
+
+    // Test JSON serialization
+    let json = serde_json::to_string_pretty(&report_no_genesis).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": false,
+              "marks": [
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 1,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdbwatptqzoyrkdmptvasefnfmpmpmrfoywyptolfd",
+                      "issues": []
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
+}
+
+#[test]
+fn test_validate_date_ordering_violation_constructed() {
+    #[cfg(feature = "envelope")]
+    provenance_mark::register_tags();
+
+    let marks = create_test_marks(2, ProvenanceMarkResolution::Low, "test");
+    let mark0 = &marks[0];
+
+    let calendar = chrono::Utc;
+    // Create a second mark with an earlier date
+    let earlier_date = Date::from_datetime(
+        calendar
+            .with_ymd_and_hms(2023, 6, 19, 12, 0, 0)
+            .single()
+            .unwrap(),
+    );
+
+    // To test date ordering, we need to create mark1 with the correct key from
+    // generator but with an earlier date
+    let mut generator = ProvenanceMarkGenerator::new_with_passphrase(
+        ProvenanceMarkResolution::Low,
+        "test",
+    );
+    let _ = generator.next(mark0.date().clone(), None::<String>); // skip first
+    let mark1_bad_date = generator.next(earlier_date, None::<String>);
+
+    let report = ProvenanceMark::validate(vec![mark0.clone(), mark1_bad_date]);
+
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetckchiatnrntdrtjohpbdeteo"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetckchiatnrntdrtjohpbdeteo"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 1,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetckchiatnrntdrtjohpbdeteo",
+                      "issues": [
+                        {
+                          "type": "DateOrdering",
+                          "data": {
+                            "previous": "2023-06-20",
+                            "next": "2023-06-19"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
+}
+
+#[test]
+fn test_validate_non_genesis_at_seq_zero() {
+    #[cfg(feature = "envelope")]
+    provenance_mark::register_tags();
+
+    // Create proper marks
+    let marks = create_test_marks(2, ProvenanceMarkResolution::Low, "test");
+    let mark0 = &marks[0];
+    let mark1 = &marks[1];
+
+    // When mark1 claims to be at seq 0, it should fail NonGenesisAtZero check
+    // when preceded by mark0
+    let calendar = chrono::Utc;
+    let date = Date::from_datetime(
+        calendar
+            .with_ymd_and_hms(2023, 6, 21, 12, 0, 0)
+            .single()
+            .unwrap(),
+    );
+
+    let bad_mark = ProvenanceMark::new(
+        mark1.res(),
+        mark1.key().to_vec(),
+        mark1.hash().to_vec(),
+        mark1.chain_id().to_vec(),
+        0, // Claim seq 0 but not genesis
+        date,
+        None::<String>,
+    )
+    .unwrap();
+
+    // The report shows mark0 and bad_mark, where bad_mark is rejected
+    let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
+
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdecgldtsrbbfgsbetbahhgowzrntertkopkmyiowp"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetbahhgowzrntertkopkmyiowp"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetbahhgowzrntertkopkmyiowp",
+                      "issues": [
+                        {
+                          "type": "NonGenesisAtZero"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
+}
+
+#[test]
+fn test_validate_invalid_genesis_key_constructed() {
+    #[cfg(feature = "envelope")]
+    provenance_mark::register_tags();
+
+    // Create proper marks
+    let marks = create_test_marks(2, ProvenanceMarkResolution::Low, "test");
+    let mark0 = &marks[0];
+    let mark1 = &marks[1];
+
+    // When mark1 is at seq > 0 but has key == chain_id, it should fail
+    // InvalidGenesisKey
+    let calendar = chrono::Utc;
+    let date = Date::from_datetime(
+        calendar
+            .with_ymd_and_hms(2023, 6, 21, 12, 0, 0)
+            .single()
+            .unwrap(),
+    );
+
+    let bad_mark = ProvenanceMark::new(
+        mark1.res(),
+        mark1.chain_id().to_vec(), // key == chain_id (not allowed at seq > 0)
+        mark1.hash().to_vec(),
+        mark1.chain_id().to_vec(),
+        1, // seq 1
+        date,
+        None::<String>,
+    )
+    .unwrap();
+
+    // The report shows mark0 and bad_mark, where bad_mark is rejected
+    let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
+
+    let json = serde_json::to_string_pretty(&report).unwrap();
+    #[rustfmt::skip]
+    assert_actual_expected!(json, indoc! {r#"
+        {
+          "marks": [
+            "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+            "ur:provenance/lfaegdpaimkerydihsaedewnwnsnwmgdmucfdwcpfxdtsr"
+          ],
+          "chains": [
+            {
+              "chain_id": "b16a7cbd",
+              "has_genesis": true,
+              "marks": [
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdpaimkerydihsaedewnwnsnwmgdmucfdwcpfxdtsr"
+              ],
+              "sequences": [
+                {
+                  "start_seq": 0,
+                  "end_seq": 0,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 1,
+                  "end_seq": 1,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdpaimkerydihsaedewnwnsnwmgdmucfdwcpfxdtsr",
+                      "issues": [
+                        {
+                          "type": "InvalidGenesisKey"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }"#}.trim());
 }
