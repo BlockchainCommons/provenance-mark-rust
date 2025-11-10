@@ -44,6 +44,9 @@ fn test_validate_empty() {
           "marks": [],
           "chains": []
         }"#}.trim());
+
+    // Format should return empty string for empty report
+    assert_actual_expected!(report.format(), "");
 }
 
 #[test]
@@ -80,6 +83,9 @@ fn test_validate_single_mark() {
             }
           ]
         }"#}.trim());
+
+    // Format should return empty string for single perfect chain
+    assert_actual_expected!(report.format(), "");
 }
 
 #[test]
@@ -141,6 +147,9 @@ fn test_validate_valid_sequence() {
             }
           ]
         }"#}.trim());
+
+    // Format should return empty string for single perfect chain
+    assert_actual_expected!(report.format(), "");
 }
 
 #[test]
@@ -197,6 +206,10 @@ fn test_validate_deduplication() {
             }
           ]
         }"#}.trim());
+
+    // Format should return empty string - single perfect chain after
+    // deduplication
+    assert_actual_expected!(report.format(), "");
 }
 
 #[test]
@@ -283,6 +296,24 @@ fn test_validate_multiple_chains() {
             }
           ]
         }"#}.trim());
+
+    // Format should show both chains (interesting)
+    #[rustfmt::skip]
+    assert_actual_expected!(report.format(), indoc! {r#"
+        Total marks: 6
+        Chains: 2
+
+        Chain 1: 7a9c3f5e
+          0: 0d6e0afd (genesis mark)
+          1: 6cd504e7
+          2: dc07895c
+
+        Chain 2: a33e10de
+          0: c2a985ff (genesis mark)
+          1: 5567cd24
+          2: f759ad4c
+
+    "#}.trim());
 }
 
 #[test]
@@ -342,6 +373,21 @@ fn test_validate_missing_genesis() {
             }
           ]
         }"#}.trim());
+
+    // Format should show missing genesis warning
+    #[rustfmt::skip]
+    assert_actual_expected!(report.format(), indoc! {r#"
+        Total marks: 4
+        Chains: 1
+
+        Chain 1: b16a7cbd
+          Warning: No genesis mark found
+          1: 1b806d6c
+          2: b292f357
+          3: 761a5e74
+          4: 42d12de5
+
+    "#}.trim());
 }
 
 #[test]
@@ -420,6 +466,20 @@ fn test_validate_sequence_gap() {
             }
           ]
         }"#}.trim());
+
+    // Format should show gap issue and multiple sequences
+    #[rustfmt::skip]
+    assert_actual_expected!(report.format(), indoc! {r#"
+        Total marks: 4
+        Chains: 1
+
+        Chain 1: b16a7cbd
+          0: f057c8c4 (genesis mark)
+          1: 1b806d6c
+          3: 761a5e74 (gap: 2 missing)
+          4: 42d12de5
+
+    "#}.trim());
 }
 
 #[test]
@@ -491,21 +551,44 @@ fn test_validate_out_of_order() {
             }
           ]
         }"#}.trim());
+
+    // Format should return empty string - validation sorts by seq number
+    assert_actual_expected!(report.format(), "");
 }
 
 #[test]
 fn test_validate_hash_mismatch() {
+    #[cfg(feature = "envelope")]
+    provenance_mark::register_tags();
+
     let marks = create_test_marks(3, ProvenanceMarkResolution::Low, "test");
-    let other_marks =
-        create_test_marks(3, ProvenanceMarkResolution::Low, "other");
+    let mark0 = &marks[0];
+    let mark1 = &marks[1];
 
-    // Create a chain with mismatched hashes by mixing chains
-    let mixed_marks = vec![
-        marks[0].clone(),
-        other_marks[1].clone(), // Different chain - will have hash mismatch
-    ];
+    // Create a third mark that claims to follow mark1 but with wrong prev hash
+    let calendar = chrono::Utc;
+    let date = Date::from_datetime(
+        calendar
+            .with_ymd_and_hms(2023, 6, 22, 12, 0, 0)
+            .single()
+            .unwrap(),
+    );
 
-    let report = ProvenanceMark::validate(mixed_marks);
+    // Use mark1's chain_id and key, but use mark0's hash as prev (wrong!)
+    // This creates a hash mismatch since mark1.hash should be the prev
+    let bad_mark = ProvenanceMark::new(
+        mark1.res(),
+        mark1.key().to_vec(),
+        mark0.hash().to_vec(), // Wrong! Should be mark1.hash()
+        mark1.chain_id().to_vec(),
+        2,
+        date,
+        None::<String>,
+    )
+    .unwrap();
+
+    let report =
+        ProvenanceMark::validate(vec![mark0.clone(), mark1.clone(), bad_mark]);
 
     // Test JSON serialization
     let json = serde_json::to_string_pretty(&report).unwrap();
@@ -514,42 +597,48 @@ fn test_validate_hash_mismatch() {
         {
           "marks": [
             "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
-            "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam"
+            "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+            "ur:provenance/lfaegdecgldtsrbbfgsbethprlwfgsrnttrtkpgsttptwn"
           ],
           "chains": [
-            {
-              "chain_id": "8925375b",
-              "has_genesis": false,
-              "marks": [
-                "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam"
-              ],
-              "sequences": [
-                {
-                  "start_seq": 1,
-                  "end_seq": 1,
-                  "marks": [
-                    {
-                      "mark": "ur:provenance/lfaegdtoioctmwmkdwvscschbzttgstirfrdldotpthpam",
-                      "issues": []
-                    }
-                  ]
-                }
-              ]
-            },
             {
               "chain_id": "b16a7cbd",
               "has_genesis": true,
               "marks": [
-                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"
+                "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
+                "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                "ur:provenance/lfaegdecgldtsrbbfgsbethprlwfgsrnttrtkpgsttptwn"
               ],
               "sequences": [
                 {
                   "start_seq": 0,
-                  "end_seq": 0,
+                  "end_seq": 1,
                   "marks": [
                     {
                       "mark": "ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba",
                       "issues": []
+                    },
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbetgazoenadrntdrtkoluwekerp",
+                      "issues": []
+                    }
+                  ]
+                },
+                {
+                  "start_seq": 2,
+                  "end_seq": 2,
+                  "marks": [
+                    {
+                      "mark": "ur:provenance/lfaegdecgldtsrbbfgsbethprlwfgsrnttrtkpgsttptwn",
+                      "issues": [
+                        {
+                          "type": "HashMismatch",
+                          "data": {
+                            "expected": "d446017b",
+                            "actual": "1b806d6c"
+                          }
+                        }
+                      ]
                     }
                   ]
                 }
@@ -557,6 +646,18 @@ fn test_validate_hash_mismatch() {
             }
           ]
         }"#}.trim());
+
+    // Format should show hash mismatch issue
+    #[rustfmt::skip]
+    assert_actual_expected!(report.format().trim(), indoc! {r#"
+        Total marks: 3
+        Chains: 1
+
+        Chain 1: b16a7cbd
+          0: f057c8c4 (genesis mark)
+          1: 1b806d6c
+          2: 09cca821 (hash mismatch)
+    "#}.trim());
 }
 
 #[test]
@@ -710,6 +811,21 @@ fn test_validate_multiple_sequences_in_chain() {
             }
           ]
         }"#}.trim());
+
+    // Format should show multiple sequences with gap annotations
+    #[rustfmt::skip]
+    assert_actual_expected!(report.format(), indoc! {r#"
+        Total marks: 5
+        Chains: 1
+
+        Chain 1: b16a7cbd
+          0: f057c8c4 (genesis mark)
+          1: 1b806d6c
+          3: 761a5e74 (gap: 2 missing)
+          4: 42d12de5
+          6: 8a9b06e1 (gap: 5 missing)
+
+    "#}.trim());
 }
 
 #[test]

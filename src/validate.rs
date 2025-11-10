@@ -197,6 +197,173 @@ impl ValidationReport {
     pub fn marks(&self) -> &[ProvenanceMark] { &self.marks }
     pub fn chains(&self) -> &[ChainReport] { &self.chains }
 
+    /// Format the validation report as human-readable text.
+    ///
+    /// Returns a formatted string if the report contains interesting
+    /// information (issues, multiple chains, or multiple sequences).
+    /// Returns an empty string if the report represents a single perfect chain
+    /// with no issues.
+    pub fn format(&self) -> String {
+        if !self.is_interesting() {
+            return String::new();
+        }
+
+        let mut lines = Vec::new();
+
+        // Report summary
+        lines.push(format!("Total marks: {}", self.marks.len()));
+        lines.push(format!("Chains: {}", self.chains.len()));
+        lines.push(String::new());
+
+        // Report each chain
+        for (chain_idx, chain) in self.chains.iter().enumerate() {
+            // Show short chain ID (first 4 bytes)
+            let chain_id_hex = chain.chain_id_hex();
+            let short_chain_id = if chain_id_hex.len() > 8 {
+                &chain_id_hex[..8]
+            } else {
+                &chain_id_hex
+            };
+
+            lines.push(format!("Chain {}: {}", chain_idx + 1, short_chain_id));
+
+            if !chain.has_genesis() {
+                lines.push("  Warning: No genesis mark found".to_string());
+            }
+
+            // Report each sequence
+            for seq in chain.sequences() {
+                // Report each mark in the sequence
+                for flagged_mark in seq.marks() {
+                    let mark = flagged_mark.mark();
+                    let short_id = mark.identifier();
+                    let seq_num = mark.seq();
+
+                    // Build the mark line with annotations
+                    let mut annotations = Vec::new();
+
+                    // Check if it's genesis
+                    if mark.is_genesis() {
+                        annotations.push("genesis mark".to_string());
+                    }
+
+                    // Add issue annotations
+                    for issue in flagged_mark.issues() {
+                        let issue_str = match issue {
+                            ValidationIssue::SequenceGap {
+                                expected,
+                                actual: _,
+                            } => {
+                                format!("gap: {} missing", expected)
+                            }
+                            ValidationIssue::DateOrdering {
+                                previous,
+                                next,
+                            } => {
+                                format!("date {} < {}", previous, next)
+                            }
+                            ValidationIssue::HashMismatch { .. } => {
+                                "hash mismatch".to_string()
+                            }
+                            ValidationIssue::KeyMismatch => {
+                                "key mismatch".to_string()
+                            }
+                            ValidationIssue::NonGenesisAtZero => {
+                                "non-genesis at seq 0".to_string()
+                            }
+                            ValidationIssue::InvalidGenesisKey => {
+                                "invalid genesis key".to_string()
+                            }
+                        };
+                        annotations.push(issue_str);
+                    }
+
+                    // Format the line
+                    if annotations.is_empty() {
+                        lines.push(format!("  {}: {}", seq_num, short_id));
+                    } else {
+                        lines.push(format!(
+                            "  {}: {} ({})",
+                            seq_num,
+                            short_id,
+                            annotations.join(", ")
+                        ));
+                    }
+                }
+            }
+
+            lines.push(String::new());
+        }
+
+        lines.join("\n").trim_end().to_string()
+    }
+
+    /// Check if the validation report contains interesting information.
+    ///
+    /// Returns false for a single perfect chain with no issues, true otherwise.
+    fn is_interesting(&self) -> bool {
+        // Not interesting if empty
+        if self.chains.is_empty() {
+            return false;
+        }
+
+        // Check if any chain is missing genesis
+        for chain in &self.chains {
+            if !chain.has_genesis() {
+                return true;
+            }
+        }
+
+        // Not interesting if single chain with single perfect sequence
+        if self.chains.len() == 1 {
+            let chain = &self.chains[0];
+            if chain.sequences().len() == 1 {
+                let seq = &chain.sequences()[0];
+                // Check if the sequence has no issues
+                if seq.marks().iter().all(|m| m.issues().is_empty()) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
+    /// Check if the validation report has any issues.
+    ///
+    /// Returns true if there are validation issues, missing genesis,
+    /// multiple chains, or multiple sequences.
+    pub fn has_issues(&self) -> bool {
+        // Missing genesis is considered an issue
+        for chain in &self.chains {
+            if !chain.has_genesis() {
+                return true;
+            }
+        }
+
+        // Check for validation issues in marks
+        for chain in &self.chains {
+            for seq in chain.sequences() {
+                for mark in seq.marks() {
+                    if !mark.issues().is_empty() {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Multiple chains or sequences are also considered issues
+        if self.chains.len() > 1 {
+            return true;
+        }
+
+        if self.chains.len() == 1 && self.chains[0].sequences().len() > 1 {
+            return true;
+        }
+
+        false
+    }
+
     /// Validate a collection of provenance marks
     /// Validate a collection of provenance marks
     pub fn validate(marks: Vec<ProvenanceMark>) -> Self {
