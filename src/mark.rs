@@ -2,10 +2,10 @@
 use std::sync::Arc;
 
 #[cfg(feature = "envelope")]
+use bc_envelope::prelude::*;
+#[cfg(feature = "envelope")]
 use bc_envelope::{FormatContext, with_format_context_mut};
 use bc_ur::bytewords;
-// use bc_tags;
-use dcbor::{Date, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -17,9 +17,6 @@ use crate::{
         serialize_base64, serialize_cbor, serialize_iso8601,
     },
 };
-
-#[cfg(feature = "envelope")]
-use bc_envelope::prelude::*;
 
 // JSON Example:
 // {"chainID":"znwVmQ==","date":"2023-06-20T00:00:00Z","hash":"ZaTfvw==","key":"
@@ -293,24 +290,53 @@ impl ProvenanceMark {
 
 impl ProvenanceMark {
     pub fn precedes(&self, next: &ProvenanceMark) -> bool {
+        self.precedes_opt(next).is_ok()
+    }
+
+    pub fn precedes_opt(&self, next: &ProvenanceMark) -> Result<()> {
+        use crate::ValidationIssue;
+
         // `next` can't be a genesis
-        next.seq != 0 &&
-            next.key != next.chain_id &&
-            // `next` must have the next highest sequence number
-            self.seq == next.seq - 1 &&
-            // `next` must have an equal or later date
-            self.date <= next.date &&
-            // `next` must reveal the key that was used to generate this mark's hash
-            self.hash ==
-                Self::make_hash(
-                    self.res,
-                    &self.key,
-                    &next.key,
-                    &self.chain_id,
-                    &self.seq_bytes,
-                    &self.date_bytes,
-                    &self.info_bytes
-                )
+        if next.seq == 0 {
+            return Err(ValidationIssue::NonGenesisAtZero.into());
+        }
+        if next.key == next.chain_id {
+            return Err(ValidationIssue::InvalidGenesisKey.into());
+        }
+        // `next` must have the next highest sequence number
+        if self.seq != next.seq - 1 {
+            return Err(ValidationIssue::SequenceGap {
+                expected: self.seq + 1,
+                actual: next.seq,
+            }
+            .into());
+        }
+        // `next` must have an equal or later date
+        if self.date > next.date {
+            return Err(ValidationIssue::DateOrdering {
+                previous: self.date.clone(),
+                next: next.date.clone(),
+            }
+            .into());
+        }
+        // `next` must reveal the key that was used to generate this mark's hash
+        let expected_hash = Self::make_hash(
+            self.res,
+            &self.key,
+            &next.key,
+            &self.chain_id,
+            &self.seq_bytes,
+            &self.date_bytes,
+            &self.info_bytes,
+        );
+        if self.hash != expected_hash {
+            return Err(ValidationIssue::HashMismatch {
+                expected: expected_hash,
+                actual: self.hash.clone(),
+            }
+            .into());
+        }
+        Ok(())
     }
 
     pub fn is_sequence_valid(marks: &[ProvenanceMark]) -> bool {
@@ -475,9 +501,7 @@ impl ProvenanceMark {
 
 #[cfg(feature = "envelope")]
 impl From<ProvenanceMark> for Envelope {
-    fn from(mark: ProvenanceMark) -> Self {
-        Envelope::new(mark.to_cbor())
-    }
+    fn from(mark: ProvenanceMark) -> Self { Envelope::new(mark.to_cbor()) }
 }
 
 #[cfg(feature = "envelope")]

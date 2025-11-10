@@ -27,6 +27,8 @@
 //! See the unit tests in the source code for examples of how to use this
 //! library.
 
+mod validate;
+pub use validate::*;
 mod error;
 pub use error::{Error, Result};
 mod resolution;

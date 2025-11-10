@@ -97,6 +97,10 @@ pub enum Error {
     #[cfg(feature = "envelope")]
     #[error("envelope error: {0}")]
     Envelope(#[from] bc_envelope::Error),
+
+    /// Validation error
+    #[error("validation error: {0}")]
+    Validation(#[from] crate::validate::ValidationIssue),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
