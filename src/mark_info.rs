@@ -1,12 +1,12 @@
-use bc_ur::{UR, UREncodable};
-use serde::{Deserialize, Serialize};
+use bc_ur::{UR, URDecodable, UREncodable};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     ProvenanceMark,
     util::{deserialize_ur, serialize_ur},
 };
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 pub struct ProvenanceMarkInfo {
     #[serde(
         serialize_with = "serialize_ur",
@@ -22,6 +22,45 @@ pub struct ProvenanceMarkInfo {
     comment: String,
 
     mark: ProvenanceMark,
+}
+
+impl<'de> Deserialize<'de> for ProvenanceMarkInfo {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct ProvenanceMarkInfoHelper {
+            #[serde(
+                serialize_with = "serialize_ur",
+                deserialize_with = "deserialize_ur"
+            )]
+            ur: UR,
+            bytewords: String,
+            bytemoji: String,
+            #[serde(default)]
+            comment: String,
+            // We deserialize mark but ignore it in favor of parsing from UR
+            #[serde(default)]
+            #[allow(dead_code)]
+            mark: Option<serde_json::Value>,
+        }
+
+        let helper = ProvenanceMarkInfoHelper::deserialize(deserializer)?;
+
+        // Deserialize the mark from the UR to ensure date_bytes and seq_bytes
+        // match what was originally generated
+        let mark = ProvenanceMark::from_ur(&helper.ur)
+            .map_err(serde::de::Error::custom)?;
+
+        Ok(ProvenanceMarkInfo {
+            ur: helper.ur,
+            bytewords: helper.bytewords,
+            bytemoji: helper.bytemoji,
+            comment: helper.comment,
+            mark,
+        })
+    }
 }
 
 impl ProvenanceMarkInfo {
