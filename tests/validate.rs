@@ -37,7 +37,7 @@ fn create_test_marks(
 fn test_validate_empty() {
     let report = ProvenanceMark::validate(vec![]);
 
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -45,8 +45,13 @@ fn test_validate_empty() {
           "chains": []
         }"#}.trim());
 
+    // Test compact JSON format
+    let json_compact = report.format(ValidationReportFormat::JsonCompact);
+    #[rustfmt::skip]
+    assert_actual_expected!(json_compact, r#"{"marks":[],"chains":[]}"#);
+
     // Format should return empty string for empty report
-    assert_actual_expected!(report.format(), "");
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), "");
 }
 
 #[test]
@@ -54,7 +59,7 @@ fn test_validate_single_mark() {
     let marks = create_test_marks(1, ProvenanceMarkResolution::Low, "test");
     let report = ProvenanceMark::validate(marks.clone());
 
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -84,8 +89,13 @@ fn test_validate_single_mark() {
           ]
         }"#}.trim());
 
+    // Test compact JSON format
+    let json_compact = report.format(ValidationReportFormat::JsonCompact);
+    #[rustfmt::skip]
+    assert_actual_expected!(json_compact, r#"{"marks":["ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"],"chains":[{"chain_id":"b16a7cbd","has_genesis":true,"marks":["ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba"],"sequences":[{"start_seq":0,"end_seq":0,"marks":[{"mark":"ur:provenance/lfaegdpaimkerydihsaedetiimmttpgdmocfdpbnhlasba","issues":[]}]}]}]}"#);
+
     // Format should return empty string for single perfect chain
-    assert_actual_expected!(report.format(), "");
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), "");
 }
 
 #[test]
@@ -94,7 +104,7 @@ fn test_validate_valid_sequence() {
     let report = ProvenanceMark::validate(marks.clone());
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -149,7 +159,7 @@ fn test_validate_valid_sequence() {
         }"#}.trim());
 
     // Format should return empty string for single perfect chain
-    assert_actual_expected!(report.format(), "");
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), "");
 }
 
 #[test]
@@ -165,7 +175,7 @@ fn test_validate_deduplication() {
     let report = ProvenanceMark::validate(marks_with_dups);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -209,7 +219,7 @@ fn test_validate_deduplication() {
 
     // Format should return empty string - single perfect chain after
     // deduplication
-    assert_actual_expected!(report.format(), "");
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), "");
 }
 
 #[test]
@@ -223,7 +233,7 @@ fn test_validate_multiple_chains() {
     let report = ProvenanceMark::validate(all_marks);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -299,7 +309,7 @@ fn test_validate_multiple_chains() {
 
     // Format should show both chains (interesting)
     #[rustfmt::skip]
-    assert_actual_expected!(report.format(), indoc! {r#"
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 6
         Chains: 2
 
@@ -326,7 +336,7 @@ fn test_validate_missing_genesis() {
     let report = ProvenanceMark::validate(marks_no_genesis);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -376,7 +386,7 @@ fn test_validate_missing_genesis() {
 
     // Format should show missing genesis warning
     #[rustfmt::skip]
-    assert_actual_expected!(report.format(), indoc! {r#"
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 4
         Chains: 1
 
@@ -405,7 +415,7 @@ fn test_validate_sequence_gap() {
     let report = ProvenanceMark::validate(marks_with_gap);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -469,7 +479,7 @@ fn test_validate_sequence_gap() {
 
     // Format should show gap issue and multiple sequences
     #[rustfmt::skip]
-    assert_actual_expected!(report.format(), indoc! {r#"
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 4
         Chains: 1
 
@@ -498,7 +508,7 @@ fn test_validate_out_of_order() {
     let report = ProvenanceMark::validate(marks_out_of_order);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -553,7 +563,7 @@ fn test_validate_out_of_order() {
         }"#}.trim());
 
     // Format should return empty string - validation sorts by seq number
-    assert_actual_expected!(report.format(), "");
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), "");
 }
 
 #[test]
@@ -591,7 +601,7 @@ fn test_validate_hash_mismatch() {
         ProvenanceMark::validate(vec![mark0.clone(), mark1.clone(), bad_mark]);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -649,7 +659,7 @@ fn test_validate_hash_mismatch() {
 
     // Format should show hash mismatch issue
     #[rustfmt::skip]
-    assert_actual_expected!(report.format().trim(), indoc! {r#"
+    assert_actual_expected!(report.format(ValidationReportFormat::Text).trim(), indoc! {r#"
         Total marks: 3
         Chains: 1
 
@@ -671,7 +681,7 @@ fn test_validate_date_ordering_violation() {
     let report = ProvenanceMark::validate(marks);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -730,7 +740,7 @@ fn test_validate_multiple_sequences_in_chain() {
     let report = ProvenanceMark::validate(marks_with_gaps);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -814,7 +824,7 @@ fn test_validate_multiple_sequences_in_chain() {
 
     // Format should show multiple sequences with gap annotations
     #[rustfmt::skip]
-    assert_actual_expected!(report.format(), indoc! {r#"
+    assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 5
         Chains: 1
 
@@ -881,7 +891,7 @@ fn test_validate_with_info() {
     let report = ProvenanceMark::validate(marks);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -938,7 +948,7 @@ fn test_validate_sorted_chains() {
     let report = ProvenanceMark::validate(all_marks);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1035,7 +1045,7 @@ fn test_validate_genesis_check() {
     let report_with_genesis = ProvenanceMark::validate(marks.clone());
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report_with_genesis).unwrap();
+    let json = report_with_genesis.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1082,7 +1092,7 @@ fn test_validate_genesis_check() {
     let report_no_genesis = ProvenanceMark::validate(marks_no_genesis);
 
     // Test JSON serialization
-    let json = serde_json::to_string_pretty(&report_no_genesis).unwrap();
+    let json = report_no_genesis.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1147,7 +1157,7 @@ fn test_validate_date_ordering_violation_constructed() {
 
     let report = ProvenanceMark::validate(vec![mark0.clone(), mark1_bad_date]);
 
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1232,7 +1242,7 @@ fn test_validate_non_genesis_at_seq_zero() {
     // The report shows mark0 and bad_mark, where bad_mark is rejected
     let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
 
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1313,7 +1323,7 @@ fn test_validate_invalid_genesis_key_constructed() {
     // The report shows mark0 and bad_mark, where bad_mark is rejected
     let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
 
-    let json = serde_json::to_string_pretty(&report).unwrap();
+    let json = report.format(ValidationReportFormat::JsonPretty);
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {

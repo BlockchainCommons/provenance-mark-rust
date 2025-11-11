@@ -60,6 +60,18 @@ mod date_as_iso8601 {
     }
 }
 
+/// Format for validation report output
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum ValidationReportFormat {
+    /// Human-readable text format
+    #[default]
+    Text,
+    /// Compact JSON format (no whitespace)
+    JsonCompact,
+    /// Pretty-printed JSON format (with indentation)
+    JsonPretty,
+}
+
 /// Issue flagged during validation
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", content = "data")]
@@ -203,7 +215,19 @@ impl ValidationReport {
     /// information (issues, multiple chains, or multiple sequences).
     /// Returns an empty string if the report represents a single perfect chain
     /// with no issues.
-    pub fn format(&self) -> String {
+    pub fn format(&self, format: ValidationReportFormat) -> String {
+        match format {
+            ValidationReportFormat::Text => self.format_text(),
+            ValidationReportFormat::JsonCompact => {
+                serde_json::to_string(self).unwrap_or_default()
+            }
+            ValidationReportFormat::JsonPretty => {
+                serde_json::to_string_pretty(self).unwrap_or_default()
+            }
+        }
+    }
+
+    fn format_text(&self) -> String {
         if !self.is_interesting() {
             return String::new();
         }
