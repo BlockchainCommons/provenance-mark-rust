@@ -1,4 +1,4 @@
-#![doc(html_root_url = "https://docs.rs/provenance-mark/0.15.0")]
+#![doc(html_root_url = "https://docs.rs/provenance-mark/0.16.0")]
 #![warn(rust_2018_idioms)]
 
 //! # Introduction
@@ -12,14 +12,14 @@
 //! ensure public and easy verification of provenance, offering robust security
 //! and intuitive usability. Provenance Marks are particularly valuable for
 //! securing artistic, intellectual, and commercial works against fraud and deep
-//! fakes, protecting creators’ reputations and the integrity of their
+//! fakes, protecting creators' reputations and the integrity of their
 //! creations.
 //!
 //! # Getting Started
 //!
 //! ```toml
 //! [dependencies]
-//! provenance-mark = "0.15.0"
+//! provenance-mark = "0.16.0"
 //! ```
 //!
 //! # Examples

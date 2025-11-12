@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.15.0"
+provenance-mark = "0.16.0"
 ```
 
 ## Specification
@@ -48,6 +48,12 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.16.0** (November 12, 2025)
+  - Add validation tools module with new public types.
+  - Make crypto_utils and date modules public.
+  - Move tests to separate folder.
+  - Align to dependencies.
 
 - **0.15.0** (November 3, 2025)
   - Align to dependencies.
