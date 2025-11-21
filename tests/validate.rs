@@ -1152,7 +1152,7 @@ fn test_validate_date_ordering_violation_constructed() {
         ProvenanceMarkResolution::Low,
         "test",
     );
-    let _ = generator.next(mark0.date().clone(), None::<String>); // skip first
+    let _ = generator.next(mark0.date(), None::<String>); // skip first
     let mark1_bad_date = generator.next(earlier_date, None::<String>);
 
     let report = ProvenanceMark::validate(vec![mark0.clone(), mark1_bad_date]);

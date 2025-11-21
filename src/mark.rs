@@ -82,7 +82,7 @@ impl<'de> Deserialize<'de> for ProvenanceMark {
             .map_err(serde::de::Error::custom)?;
         let date_bytes = helper
             .res
-            .serialize_date(helper.date.clone())
+            .serialize_date(helper.date)
             .map_err(serde::de::Error::custom)?;
 
         Ok(ProvenanceMark {
@@ -123,7 +123,7 @@ impl ProvenanceMark {
     pub fn date_bytes(&self) -> &[u8] { &self.date_bytes }
 
     pub fn seq(&self) -> u32 { self.seq }
-    pub fn date(&self) -> &Date { &self.date }
+    pub fn date(&self) -> Date { self.date }
 
     pub fn message(&self) -> Vec<u8> {
         let payload = [
@@ -314,8 +314,8 @@ impl ProvenanceMark {
         // `next` must have an equal or later date
         if self.date > next.date {
             return Err(ValidationIssue::DateOrdering {
-                previous: self.date.clone(),
-                next: next.date.clone(),
+                previous: self.date,
+                next: next.date,
             }
             .into());
         }

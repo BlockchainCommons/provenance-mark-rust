@@ -38,7 +38,7 @@ fn run_test(
     let mut encoded_generator = serde_json::to_string(&provenance_gen).unwrap();
 
     let marks = dates
-        .iter()
+        .into_iter()
         .map(|date| {
             let mut generator: ProvenanceMarkGenerator =
                 serde_json::from_str(&encoded_generator).unwrap();
@@ -48,7 +48,7 @@ fn run_test(
             } else {
                 None
             };
-            let result = generator.next(date.clone(), title);
+            let result = generator.next(date, title);
 
             encoded_generator = serde_json::to_string(&generator).unwrap();
 
