@@ -1,6 +1,4 @@
-use rand_core::{
-    Error, RngCore, impls::fill_bytes_via_next, le::read_u64_into,
-};
+use rand_core::{RngCore, impls::fill_bytes_via_next, le::read_u64_into};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Xoshiro256StarStar {
@@ -74,11 +72,5 @@ impl RngCore for Xoshiro256StarStar {
     #[inline]
     fn fill_bytes(&mut self, dest: &mut [u8]) {
         fill_bytes_via_next(self, dest);
-    }
-
-    #[inline]
-    fn try_fill_bytes(&mut self, dest: &mut [u8]) -> Result<(), Error> {
-        self.fill_bytes(dest);
-        Ok(())
     }
 }
