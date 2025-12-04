@@ -161,7 +161,7 @@ impl TryFrom<Envelope> for ProvenanceMarkGenerator {
     type Error = Error;
 
     fn try_from(envelope: Envelope) -> Result<Self> {
-        envelope.check_type_envelope("provenance-generator")?;
+        envelope.check_type("provenance-generator")?;
         let chain_id: Vec<u8> = envelope.subject().try_byte_string()?;
         const EXPECTED_KEY_COUNT: usize = 5;
         let assertion_count = envelope.assertions().len();
