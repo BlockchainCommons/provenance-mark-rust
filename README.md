@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.16.0"
+provenance-mark = "0.17.0"
 ```
 
 ## Specification
@@ -48,6 +48,11 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.17.0** (December 4, 2025)
+  - Update to bc-envelope 0.38.0 and related dependencies.
+  - Adapt to renamed check_type method.
+  - Format.
 
 - **0.16.0** (November 12, 2025)
   - Add validation tools module with new public types.
