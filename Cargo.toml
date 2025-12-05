@@ -20,13 +20,13 @@ categories = [
 ] # https://crates.io/category_slugs
 
 [dependencies]
-dcbor = { version = "^0.24.0", features = ["multithreaded"] }
-bc-rand = "^0.4.2"
+dcbor = { version = "^0.24.1", features = ["multithreaded"] }
+bc-rand = "^0.5.0"
 sha2 = "^0.10.6"
 hkdf = "^0.12.3"
-bc-ur = "^0.17.0"
-bc-tags = "^0.10.0"
-bc-envelope = { version = "^0.38.0", optional = true }
+bc-ur = "^0.18.0"
+bc-tags = "^0.11.0"
+bc-envelope = { version = "^0.39.0", optional = true }
 
 chrono = { version = "0.4", features = ["serde"] }
 thiserror = "^2.0"
