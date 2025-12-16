@@ -286,6 +286,23 @@ impl ProvenanceMark {
                 .to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
+
+    /// A compact 8-letter identifier derived from the upper-case ByteWords
+    /// identifier by taking the first and last letter of each 4-letter
+    /// ByteWords syllable (4 syllables × 2 letters = 8 letters).
+    pub fn bytewords_minimal_identifier(&self, prefix: bool) -> String {
+        let full = bytewords::identifier(&self.hash[..4].try_into().unwrap())
+            .to_uppercase();
+        let mut out = String::with_capacity(8);
+        for chunk in full.as_bytes().chunks(4) {
+            if chunk.len() != 4 {
+                continue;
+            }
+            out.push(chunk[0] as char);
+            out.push(chunk[3] as char);
+        }
+        if prefix { format!("🅟 {}", out) } else { out }
+    }
 }
 
 impl ProvenanceMark {
