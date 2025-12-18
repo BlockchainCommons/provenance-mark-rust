@@ -2,6 +2,8 @@ use std::fmt::Formatter;
 
 #[cfg(feature = "envelope")]
 use bc_envelope::prelude::*;
+#[cfg(not(feature = "envelope"))]
+use dcbor::prelude::*;
 use bc_rand::RandomNumberGenerator;
 use dcbor::Date;
 use serde::{Deserialize, Serialize};

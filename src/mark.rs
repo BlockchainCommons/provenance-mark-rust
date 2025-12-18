@@ -5,6 +5,8 @@ use std::sync::Arc;
 use bc_envelope::prelude::*;
 #[cfg(feature = "envelope")]
 use bc_envelope::{FormatContext, with_format_context_mut};
+#[cfg(not(feature = "envelope"))]
+use dcbor::{Date, prelude::*};
 use bc_ur::bytewords;
 use serde::{Deserialize, Serialize};
 use url::Url;
