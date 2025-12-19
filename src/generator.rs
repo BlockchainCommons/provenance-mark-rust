@@ -2,10 +2,10 @@ use std::fmt::Formatter;
 
 #[cfg(feature = "envelope")]
 use bc_envelope::prelude::*;
-#[cfg(not(feature = "envelope"))]
-use dcbor::prelude::*;
 use bc_rand::RandomNumberGenerator;
 use dcbor::Date;
+#[cfg(not(feature = "envelope"))]
+use dcbor::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::{

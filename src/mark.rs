@@ -5,9 +5,9 @@ use std::sync::Arc;
 use bc_envelope::prelude::*;
 #[cfg(feature = "envelope")]
 use bc_envelope::{FormatContext, with_format_context_mut};
+use bc_ur::bytewords;
 #[cfg(not(feature = "envelope"))]
 use dcbor::{Date, prelude::*};
-use bc_ur::bytewords;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -290,18 +290,41 @@ impl ProvenanceMark {
     }
 
     /// A compact 8-letter identifier derived from the upper-case ByteWords
-    /// identifier by taking the first and last letter of each 4-letter
-    /// ByteWords syllable (4 syllables × 2 letters = 8 letters).
+    /// identifier by taking the first and last letter of each ByteWords word
+    /// (4 words × 2 letters = 8 letters).
     pub fn bytewords_minimal_identifier(&self, prefix: bool) -> String {
-        let full = bytewords::identifier(&self.hash[..4].try_into().unwrap())
-            .to_uppercase();
+        let full = bytewords::identifier(&self.hash[..4].try_into().unwrap());
+
+        let words: Vec<&str> = full.split_whitespace().collect();
         let mut out = String::with_capacity(8);
-        for chunk in full.as_bytes().chunks(4) {
-            if chunk.len() != 4 {
-                continue;
+        if words.len() == 4 {
+            for w in words {
+                let b = w.as_bytes();
+                if b.is_empty() {
+                    continue;
+                }
+                out.push((b[0] as char).to_ascii_uppercase());
+                out.push((b[b.len() - 1] as char).to_ascii_uppercase());
             }
-            out.push(chunk[0] as char);
-            out.push(chunk[3] as char);
+        }
+
+        // Conservative fallback: if the input wasn't in the expected
+        // space-separated 4-word format, remove whitespace and chunk the
+        // remaining letters.
+        if out.len() != 8 {
+            out.clear();
+            let compact: String = full
+                .chars()
+                .filter(|c| c.is_ascii_alphabetic())
+                .map(|c| c.to_ascii_uppercase())
+                .collect();
+            for chunk in compact.as_bytes().chunks(4) {
+                if chunk.len() != 4 {
+                    continue;
+                }
+                out.push(chunk[0] as char);
+                out.push(chunk[3] as char);
+            }
         }
         if prefix { format!("🅟 {}", out) } else { out }
     }

@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.18.0"
+provenance-mark = "0.19.0"
 ```
 
 ## Specification
@@ -48,6 +48,13 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.19.0** (December 19, 2025)
+  - Fixed to compile correctly when default-features = false
+  - Added ProvenanceMark::bytewords_minimal_identifier()
+  - Fixed bytewords_minimal_identifier() implementation
+  - Align to dependencies
+  - Format
 
 - **0.18.0** (December 5, 2025)
   - Align to dependencies.
