@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.19.0"
+provenance-mark = "0.20.0"
 ```
 
 ## Specification
@@ -48,6 +48,9 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.20.0** (January 11, 2026)
+  - Align to dependencies.
 
 - **0.19.0** (December 19, 2025)
   - Fixed to compile correctly when default-features = false
