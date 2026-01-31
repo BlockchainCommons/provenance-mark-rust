@@ -38,6 +38,7 @@ fn test_validate_empty() {
     let report = ProvenanceMark::validate(vec![]);
 
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -60,6 +61,7 @@ fn test_validate_single_mark() {
     let report = ProvenanceMark::validate(marks.clone());
 
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -105,6 +107,7 @@ fn test_validate_valid_sequence() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -176,6 +179,7 @@ fn test_validate_deduplication() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -234,6 +238,7 @@ fn test_validate_multiple_chains() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -308,6 +313,7 @@ fn test_validate_multiple_chains() {
         }"#}.trim());
 
     // Format should show both chains (interesting)
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 6
@@ -337,6 +343,7 @@ fn test_validate_missing_genesis() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -385,6 +392,7 @@ fn test_validate_missing_genesis() {
         }"#}.trim());
 
     // Format should show missing genesis warning
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 4
@@ -416,6 +424,7 @@ fn test_validate_sequence_gap() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -478,6 +487,7 @@ fn test_validate_sequence_gap() {
         }"#}.trim());
 
     // Format should show gap issue and multiple sequences
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 4
@@ -509,6 +519,7 @@ fn test_validate_out_of_order() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -602,6 +613,7 @@ fn test_validate_hash_mismatch() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -658,6 +670,7 @@ fn test_validate_hash_mismatch() {
         }"#}.trim());
 
     // Format should show hash mismatch issue
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(report.format(ValidationReportFormat::Text).trim(), indoc! {r#"
         Total marks: 3
@@ -682,6 +695,7 @@ fn test_validate_date_ordering_violation() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -741,6 +755,7 @@ fn test_validate_multiple_sequences_in_chain() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -823,6 +838,7 @@ fn test_validate_multiple_sequences_in_chain() {
         }"#}.trim());
 
     // Format should show multiple sequences with gap annotations
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(report.format(ValidationReportFormat::Text), indoc! {r#"
         Total marks: 5
@@ -892,6 +908,7 @@ fn test_validate_with_info() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -949,6 +966,7 @@ fn test_validate_sorted_chains() {
 
     // Test JSON serialization
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1046,6 +1064,7 @@ fn test_validate_genesis_check() {
 
     // Test JSON serialization
     let json = report_with_genesis.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1093,6 +1112,7 @@ fn test_validate_genesis_check() {
 
     // Test JSON serialization
     let json = report_no_genesis.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1158,6 +1178,7 @@ fn test_validate_date_ordering_violation_constructed() {
     let report = ProvenanceMark::validate(vec![mark0.clone(), mark1_bad_date]);
 
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1243,6 +1264,7 @@ fn test_validate_non_genesis_at_seq_zero() {
     let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
 
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {
@@ -1324,6 +1346,7 @@ fn test_validate_invalid_genesis_key_constructed() {
     let report = ProvenanceMark::validate(vec![mark0.clone(), bad_mark]);
 
     let json = report.format(ValidationReportFormat::JsonPretty);
+    // expected-text-output-rubric:
     #[rustfmt::skip]
     assert_actual_expected!(json, indoc! {r#"
         {

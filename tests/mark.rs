@@ -998,7 +998,8 @@ fn test_envelope() {
     let mark = generator.next(date, Some("Info field content"));
 
     let gen_envelope = generator.clone().into_envelope();
-    // println!("{}", gen_envelope.format());
+    // expected-text-output-rubric:
+    #[rustfmt::skip]
     let expected = indoc! {r#"
         Bytes(32) [
             'isA': "provenance-generator"
@@ -1017,7 +1018,8 @@ fn test_envelope() {
     // println!("{}", mark_envelope.format());
     let expected = "ProvenanceMark(59def089)";
     assert_eq!(mark_envelope.format(), expected);
-    // println!("{:?}", mark);
+    // expected-text-output-rubric:
+    #[rustfmt::skip]
     let expected = indoc! {r#"
         ProvenanceMark(key: b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc, hash: 59def089a4d373a2d3f6a449c6758f62ba55cda64c7faf01c1c74a1130d3c1ee, chainID: b16a7cbd178ee0d41cadb0dcefdbe87d6a41c85b41c551134ae8307f9203babc, seq: 0, date: 2025-10-26, info: "Info field content")
     "#}.trim();
