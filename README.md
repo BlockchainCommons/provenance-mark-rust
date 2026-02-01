@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.21.0"
+provenance-mark = "0.22.0"
 ```
 
 ## Specification
@@ -48,6 +48,10 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.22.0** (January 31, 2026)
+  - Add expected-text-output-rubric comment annotations and rustfmt::skip attributes to tests.
+  - Update bc-envelope dependency from ^0.41.1 to ^0.42.0.
 
 - **0.21.0** (January 20, 2026)
   - Align to dependencies.
