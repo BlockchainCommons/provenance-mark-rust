@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.23.0"
+provenance-mark = "0.23.1"
 ```
 
 ## Specification
@@ -48,6 +48,9 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.23.1** (March 16, 2026)
+  - Specify explicit features instead of default features on `bc-envelope` dependency.
 
 - **0.23.0** (February 5, 2026)
   - Align to dependencies.
