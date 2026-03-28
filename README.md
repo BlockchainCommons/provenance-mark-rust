@@ -14,7 +14,7 @@
 
 ```toml
 [dependencies]
-provenance-mark = "0.23.1"
+provenance-mark = "0.24.0"
 ```
 
 ## Specification
@@ -48,6 +48,17 @@ Because this library is still in a community review stage, it should not be used
 See [Blockchain Commons' Development Phases](https://github.com/BlockchainCommons/Community/blob/master/release-path.md).
 
 ### Version History
+
+- **0.24.0** (March 28, 2026)
+  - Replace `identifier()` with `id()` returning full 32-byte Mark ID (hash + fingerprint padding).
+  - Add `id_hex()` for 64-character hex representation of Mark ID.
+  - Rename and generalize `bytewords_identifier()` to `id_bytewords(word_count, prefix)` with configurable length.
+  - Rename and generalize `bytemoji_identifier()` to `id_bytemoji(word_count, prefix)` with configurable length.
+  - Rename and generalize `bytewords_minimal_identifier()` to `id_bytewords_minimal(word_count, prefix)` with configurable length.
+  - Add collision-disambiguation API: `disambiguated_id_bytewords()` and `disambiguated_id_bytemoji()`.
+  - Update Display impl to show full 64-char hex Mark ID.
+  - Update `bc-ur` dependency to ^0.19.2 for new bytewords encoding functions.
+  - Add comprehensive test suite for identifier and disambiguation API.
 
 - **0.23.1** (March 16, 2026)
   - Specify explicit features instead of default features on `bc-envelope` dependency.
