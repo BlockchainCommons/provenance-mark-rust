@@ -56,10 +56,10 @@ fn make_marks_for_resolution(
         .collect()
 }
 
-// --- identifier_hash ---
+// --- id ---
 
 #[test]
-fn test_identifier_hash_returns_32_bytes() {
+fn test_id_returns_32_bytes() {
     for res in [
         ProvenanceMarkResolution::Low,
         ProvenanceMarkResolution::Medium,
@@ -68,14 +68,13 @@ fn test_identifier_hash_returns_32_bytes() {
     ] {
         let marks = make_marks_for_resolution(res, 3);
         for mark in &marks {
-            let ih = mark.identifier_hash();
-            assert_eq!(ih.len(), 32);
+            assert_eq!(mark.id().len(), 32);
         }
     }
 }
 
 #[test]
-fn test_identifier_hash_preserves_hash_prefix() {
+fn test_id_preserves_hash_prefix() {
     for res in [
         ProvenanceMarkResolution::Low,
         ProvenanceMarkResolution::Medium,
@@ -84,127 +83,149 @@ fn test_identifier_hash_preserves_hash_prefix() {
     ] {
         let marks = make_marks_for_resolution(res, 3);
         for mark in &marks {
-            let ih = mark.identifier_hash();
+            let id = mark.id();
             let hash = mark.hash();
             assert_eq!(
-                &ih[..hash.len()],
+                &id[..hash.len()],
                 hash,
-                "identifier_hash must start with the stored hash for {res}"
+                "id must start with the stored hash for {res}"
             );
         }
     }
 }
 
-// --- backward compatibility ---
+// --- id_hex ---
 
 #[test]
-fn test_identifier_n_4_matches_identifier() {
+fn test_id_hex_is_64_chars() {
     let marks = make_test_marks(5);
     for mark in &marks {
-        assert_eq!(mark.identifier_n(4), mark.identifier());
+        let hex = mark.id_hex();
+        assert_eq!(hex.len(), 64, "id_hex must be 64 hex chars");
     }
 }
 
 #[test]
-fn test_bytewords_identifier_n_4_matches_bytewords_identifier() {
-    for res in [
-        ProvenanceMarkResolution::Low,
-        ProvenanceMarkResolution::Medium,
-        ProvenanceMarkResolution::Quartile,
-        ProvenanceMarkResolution::High,
-    ] {
-        let marks = make_marks_for_resolution(res, 5);
-        for mark in &marks {
-            assert_eq!(
-                mark.bytewords_identifier_n(4, false),
-                mark.bytewords_identifier(false),
-                "backward compat failed for {res}"
-            );
-            assert_eq!(
-                mark.bytewords_identifier_n(4, true),
-                mark.bytewords_identifier(true),
-            );
-        }
-    }
+fn test_id_hex_encodes_full_id() {
+    let marks = make_test_marks(1);
+    let mark = &marks[0];
+    assert_eq!(mark.id_hex(), hex::encode(mark.id()));
 }
 
-#[test]
-fn test_bytemoji_identifier_n_4_matches_bytemoji_identifier() {
-    let marks = make_test_marks(5);
-    for mark in &marks {
-        assert_eq!(
-            mark.bytemoji_identifier_n(4, false),
-            mark.bytemoji_identifier(false),
-        );
-    }
-}
-
-// --- parameterized identifiers ---
+// --- id_bytewords ---
 
 #[test]
-fn test_bytewords_identifier_n_word_count() {
+fn test_id_bytewords_word_count() {
     let marks = make_test_marks(3);
     let mark = &marks[0];
 
     for n in 4..=32 {
-        let id = mark.bytewords_identifier_n(n, false);
-        let words: Vec<&str> = id.split(' ').collect();
+        let bw = mark.id_bytewords(n, false);
+        let words: Vec<&str> = bw.split(' ').collect();
         assert_eq!(words.len(), n, "expected {n} words, got {}", words.len());
     }
 }
 
 #[test]
-fn test_bytewords_identifier_n_prefix_extends_shorter() {
+fn test_id_bytewords_prefix_extends_shorter() {
     let marks = make_test_marks(1);
     let mark = &marks[0];
 
-    let short = mark.bytewords_identifier_n(4, false);
-    let long = mark.bytewords_identifier_n(8, false);
+    let short = mark.id_bytewords(4, false);
+    let long = mark.id_bytewords(8, false);
     assert!(
         long.starts_with(&short),
-        "8-word identifier must start with 4-word identifier"
+        "8-word id must start with 4-word id"
     );
 }
 
 #[test]
-fn test_identifier_n_hex_length() {
+fn test_id_bytewords_with_prefix_flag() {
+    let marks = make_test_marks(1);
+    let mark = &marks[0];
+    let without = mark.id_bytewords(4, false);
+    let with = mark.id_bytewords(4, true);
+    assert!(with.starts_with("🅟 "));
+    assert_eq!(&with[5..], without.as_str());
+}
+
+// --- id_bytemoji ---
+
+#[test]
+fn test_id_bytemoji_word_count() {
+    let marks = make_test_marks(1);
+    let mark = &marks[0];
+    for n in 4..=32 {
+        let bm = mark.id_bytemoji(n, false);
+        let emojis: Vec<&str> = bm.split(' ').collect();
+        assert_eq!(emojis.len(), n);
+    }
+}
+
+// --- id_bytewords_minimal ---
+
+#[test]
+fn test_id_bytewords_minimal_length() {
     let marks = make_test_marks(1);
     let mark = &marks[0];
 
     for n in 4..=32 {
-        let hex_id = mark.identifier_n(n);
-        assert_eq!(hex_id.len(), n * 2, "hex identifier should be {n}*2 chars");
+        let minimal = mark.id_bytewords_minimal(n, false);
+        assert_eq!(
+            minimal.len(),
+            n * 2,
+            "minimal bytewords for {n} bytes should be {n}*2 chars"
+        );
     }
+}
+
+#[test]
+fn test_id_bytewords_minimal_is_uppercase() {
+    let marks = make_test_marks(1);
+    let minimal = marks[0].id_bytewords_minimal(4, false);
+    assert_eq!(minimal, minimal.to_uppercase());
+}
+
+#[test]
+fn test_id_bytewords_minimal_extends_shorter() {
+    let marks = make_test_marks(1);
+    let mark = &marks[0];
+    let short = mark.id_bytewords_minimal(4, false);
+    let long = mark.id_bytewords_minimal(8, false);
+    assert!(
+        long.starts_with(&short),
+        "8-byte minimal must start with 4-byte minimal"
+    );
 }
 
 // --- panic on invalid input ---
 
 #[test]
 #[should_panic(expected = "word_count must be 4..=32")]
-fn test_bytewords_identifier_n_panics_below_4() {
+fn test_id_bytewords_panics_below_4() {
     let marks = make_test_marks(1);
-    marks[0].bytewords_identifier_n(3, false);
+    marks[0].id_bytewords(3, false);
 }
 
 #[test]
 #[should_panic(expected = "word_count must be 4..=32")]
-fn test_bytewords_identifier_n_panics_above_32() {
+fn test_id_bytewords_panics_above_32() {
     let marks = make_test_marks(1);
-    marks[0].bytewords_identifier_n(33, false);
-}
-
-#[test]
-#[should_panic(expected = "byte_count must be 4..=32")]
-fn test_identifier_n_panics_below_4() {
-    let marks = make_test_marks(1);
-    marks[0].identifier_n(0);
+    marks[0].id_bytewords(33, false);
 }
 
 #[test]
 #[should_panic(expected = "word_count must be 4..=32")]
-fn test_bytemoji_identifier_n_panics_above_32() {
+fn test_id_bytemoji_panics_above_32() {
     let marks = make_test_marks(1);
-    marks[0].bytemoji_identifier_n(33, false);
+    marks[0].id_bytemoji(33, false);
+}
+
+#[test]
+#[should_panic(expected = "word_count must be 4..=32")]
+fn test_id_bytewords_minimal_panics_below_4() {
+    let marks = make_test_marks(1);
+    marks[0].id_bytewords_minimal(3, false);
 }
 
 // --- disambiguation: no collisions ---
@@ -213,7 +234,7 @@ fn test_bytemoji_identifier_n_panics_above_32() {
 fn test_disambiguated_no_collisions() {
     let marks = make_test_marks(5);
     let refs: Vec<&ProvenanceMark> = marks.iter().collect();
-    let ids = ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&refs, false);
 
     assert_eq!(ids.len(), 5);
     for id in &ids {
@@ -224,8 +245,7 @@ fn test_disambiguated_no_collisions() {
 
 #[test]
 fn test_disambiguated_empty() {
-    let ids =
-        ProvenanceMark::disambiguated_bytewords_identifiers(&[], false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&[], false);
     assert!(ids.is_empty());
 }
 
@@ -233,7 +253,7 @@ fn test_disambiguated_empty() {
 fn test_disambiguated_single_mark() {
     let marks = make_test_marks(1);
     let refs: Vec<&ProvenanceMark> = marks.iter().collect();
-    let ids = ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&refs, false);
 
     assert_eq!(ids.len(), 1);
     let words: Vec<&str> = ids[0].split(' ').collect();
@@ -244,16 +264,11 @@ fn test_disambiguated_single_mark() {
 
 #[test]
 fn test_disambiguated_selective_extension() {
-    // Generate many marks and find a pair that can be made to "collide"
-    // by replacing the first mark's hash prefix with the second's.
-    // Since we can't easily construct real collisions, we test the
-    // disambiguation logic by serializing marks via JSON and tampering
-    // with the hash field to force a collision.
     let marks = make_test_marks(5);
 
     // Verify that non-colliding marks get 4 words
     let refs: Vec<&ProvenanceMark> = marks.iter().collect();
-    let ids = ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&refs, false);
     for id in &ids {
         let words: Vec<&str> = id.split(' ').collect();
         assert_eq!(words.len(), 4);
@@ -263,7 +278,7 @@ fn test_disambiguated_selective_extension() {
     let refs_with_dup: Vec<&ProvenanceMark> =
         vec![&marks[0], &marks[1], &marks[2], &marks[0]];
     let ids =
-        ProvenanceMark::disambiguated_bytewords_identifiers(&refs_with_dup, false);
+        ProvenanceMark::disambiguated_id_bytewords(&refs_with_dup, false);
 
     assert_eq!(ids.len(), 4);
 
@@ -273,7 +288,7 @@ fn test_disambiguated_selective_extension() {
     assert_eq!(words1.len(), 4, "non-colliding mark should stay at 4 words");
     assert_eq!(words2.len(), 4, "non-colliding mark should stay at 4 words");
 
-    // The duplicate pair (indices 0 and 3) have identical identifier_hash,
+    // The duplicate pair (indices 0 and 3) have identical IDs,
     // so they'll be extended to 32 words (can't disambiguate identical marks)
     let words0: Vec<&str> = ids[0].split(' ').collect();
     let words3: Vec<&str> = ids[3].split(' ').collect();
@@ -286,7 +301,7 @@ fn test_disambiguated_selective_extension() {
 fn test_disambiguated_all_results_unique_except_identical() {
     let marks = make_test_marks(10);
     let refs: Vec<&ProvenanceMark> = marks.iter().collect();
-    let ids = ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&refs, false);
 
     let unique: std::collections::HashSet<&str> =
         ids.iter().map(String::as_str).collect();
@@ -297,15 +312,14 @@ fn test_disambiguated_all_results_unique_except_identical() {
 
 #[test]
 fn test_disambiguated_bytemoji_same_prefix_lengths() {
-    // Duplicate marks force collision — verify both encodings extend equally
     let marks = make_test_marks(3);
     let refs: Vec<&ProvenanceMark> =
         vec![&marks[0], &marks[1], &marks[0]];
 
     let word_ids =
-        ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+        ProvenanceMark::disambiguated_id_bytewords(&refs, false);
     let emoji_ids =
-        ProvenanceMark::disambiguated_bytemoji_identifiers(&refs, false);
+        ProvenanceMark::disambiguated_id_bytemoji(&refs, false);
 
     assert_eq!(word_ids.len(), emoji_ids.len());
 
@@ -327,9 +341,9 @@ fn test_disambiguated_with_prefix() {
     let refs: Vec<&ProvenanceMark> = marks.iter().collect();
 
     let ids_no_prefix =
-        ProvenanceMark::disambiguated_bytewords_identifiers(&refs, false);
+        ProvenanceMark::disambiguated_id_bytewords(&refs, false);
     let ids_prefix =
-        ProvenanceMark::disambiguated_bytewords_identifiers(&refs, true);
+        ProvenanceMark::disambiguated_id_bytewords(&refs, true);
 
     for (no_pfx, pfx) in ids_no_prefix.iter().zip(ids_prefix.iter()) {
         assert!(pfx.starts_with("🅟 "));

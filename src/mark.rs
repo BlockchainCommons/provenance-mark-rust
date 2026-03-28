@@ -271,14 +271,13 @@ impl ProvenanceMark {
 }
 
 impl ProvenanceMark {
-    /// Returns a 32-byte identifier hash suitable for extended identifiers.
+    /// The 32-byte Mark ID.
     ///
-    /// The first `link_length` bytes are the mark's stored hash (preserving
-    /// backward compatibility with existing 4-byte identifiers). The remaining
+    /// The first `link_length` bytes are the mark's stored hash. The remaining
     /// bytes come from the mark's fingerprint (SHA-256 of CBOR encoding),
     /// ensuring a full 32-byte value is always available regardless of
     /// resolution.
-    pub fn identifier_hash(&self) -> [u8; 32] {
+    pub fn id(&self) -> [u8; 32] {
         let mut result = [0u8; 32];
         let n = self.hash.len();
         result[..n].copy_from_slice(&self.hash);
@@ -289,27 +288,16 @@ impl ProvenanceMark {
         result
     }
 
-    /// The first `byte_count` bytes of the identifier hash as a hex string.
-    ///
-    /// # Panics
-    /// Panics if `byte_count` is not in `4..=32`.
-    pub fn identifier_n(&self, byte_count: usize) -> String {
-        assert!(
-            (4..=32).contains(&byte_count),
-            "byte_count must be 4..=32, got {byte_count}"
-        );
-        hex::encode(&self.identifier_hash()[..byte_count])
+    /// The full 32-byte Mark ID as a 64-character hex string.
+    pub fn id_hex(&self) -> String {
+        hex::encode(self.id())
     }
 
-    /// The first four bytes of the mark's hash as a hex string.
-    pub fn identifier(&self) -> String { self.identifier_n(4) }
-
-    /// The first `word_count` bytes of the identifier hash as upper-case
-    /// ByteWords.
+    /// The first `word_count` bytes of the Mark ID as upper-case ByteWords.
     ///
     /// # Panics
     /// Panics if `word_count` is not in `4..=32`.
-    pub fn bytewords_identifier_n(
+    pub fn id_bytewords(
         &self,
         word_count: usize,
         prefix: bool,
@@ -318,21 +306,16 @@ impl ProvenanceMark {
             (4..=32).contains(&word_count),
             "word_count must be 4..=32, got {word_count}"
         );
-        let s = bytewords::encode_to_words(&self.identifier_hash()[..word_count])
+        let s = bytewords::encode_to_words(&self.id()[..word_count])
             .to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
 
-    /// The first four bytes of the mark's hash as upper-case ByteWords.
-    pub fn bytewords_identifier(&self, prefix: bool) -> String {
-        self.bytewords_identifier_n(4, prefix)
-    }
-
-    /// The first `word_count` bytes of the identifier hash as Bytemoji.
+    /// The first `word_count` bytes of the Mark ID as Bytemoji.
     ///
     /// # Panics
     /// Panics if `word_count` is not in `4..=32`.
-    pub fn bytemoji_identifier_n(
+    pub fn id_bytemoji(
         &self,
         word_count: usize,
         prefix: bool,
@@ -342,72 +325,46 @@ impl ProvenanceMark {
             "word_count must be 4..=32, got {word_count}"
         );
         let s =
-            bytewords::encode_to_bytemojis(&self.identifier_hash()[..word_count])
+            bytewords::encode_to_bytemojis(&self.id()[..word_count])
                 .to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
 
-    /// The first four bytes of the mark's hash as Bytemoji.
-    pub fn bytemoji_identifier(&self, prefix: bool) -> String {
-        self.bytemoji_identifier_n(4, prefix)
-    }
-
-    /// A compact 8-letter identifier derived from the upper-case ByteWords
-    /// identifier by taking the first and last letter of each ByteWords word
-    /// (4 words × 2 letters = 8 letters).
-    pub fn bytewords_minimal_identifier(&self, prefix: bool) -> String {
-        let full = bytewords::identifier(&self.hash[..4].try_into().unwrap());
-
-        let words: Vec<&str> = full.split_whitespace().collect();
-        let mut out = String::with_capacity(8);
-        if words.len() == 4 {
-            for w in words {
-                let b = w.as_bytes();
-                if b.is_empty() {
-                    continue;
-                }
-                out.push((b[0] as char).to_ascii_uppercase());
-                out.push((b[b.len() - 1] as char).to_ascii_uppercase());
-            }
-        }
-
-        // Conservative fallback: if the input wasn't in the expected
-        // space-separated 4-word format, remove whitespace and chunk the
-        // remaining letters.
-        if out.len() != 8 {
-            out.clear();
-            let compact: String = full
-                .chars()
-                .filter(|c| c.is_ascii_alphabetic())
-                .map(|c| c.to_ascii_uppercase())
-                .collect();
-            for chunk in compact.as_bytes().chunks(4) {
-                if chunk.len() != 4 {
-                    continue;
-                }
-                out.push(chunk[0] as char);
-                out.push(chunk[3] as char);
-            }
-        }
-        if prefix { format!("🅟 {}", out) } else { out }
+    /// The first `word_count` bytes of the Mark ID as upper-case minimal
+    /// ByteWords (2 letters per byte, concatenated without separator).
+    ///
+    /// # Panics
+    /// Panics if `word_count` is not in `4..=32`.
+    pub fn id_bytewords_minimal(
+        &self,
+        word_count: usize,
+        prefix: bool,
+    ) -> String {
+        assert!(
+            (4..=32).contains(&word_count),
+            "word_count must be 4..=32, got {word_count}"
+        );
+        let s = bytewords::encode_to_minimal_bytewords(&self.id()[..word_count])
+            .to_uppercase();
+        if prefix { format!("🅟 {}", s) } else { s }
     }
 }
 
 impl ProvenanceMark {
     /// Computes the minimum prefix length (in bytes, 4..=32) each mark needs
-    /// so that every mark in the set has a unique identifier hash prefix.
+    /// so that every mark in the set has a unique Mark ID prefix.
     ///
     /// Non-colliding marks get the minimum of 4. Only marks whose 4-byte
     /// prefixes collide are extended.
-    fn minimal_noncolliding_prefix_lengths(hashes: &[[u8; 32]]) -> Vec<usize> {
-        let n = hashes.len();
+    fn minimal_noncolliding_prefix_lengths(ids: &[[u8; 32]]) -> Vec<usize> {
+        let n = ids.len();
         let mut lengths = vec![4usize; n];
 
         // Group indices by their 4-byte prefix (fast path)
         let mut groups: std::collections::HashMap<[u8; 4], Vec<usize>> =
             std::collections::HashMap::new();
-        for (i, hash) in hashes.iter().enumerate() {
-            let key: [u8; 4] = hash[..4].try_into().unwrap();
+        for (i, id) in ids.iter().enumerate() {
+            let key: [u8; 4] = id[..4].try_into().unwrap();
             groups.entry(key).or_default().push(i);
         }
 
@@ -416,14 +373,14 @@ impl ProvenanceMark {
             if indices.len() <= 1 {
                 continue;
             }
-            Self::resolve_collision_group(hashes, indices, &mut lengths);
+            Self::resolve_collision_group(ids, indices, &mut lengths);
         }
 
         lengths
     }
 
     fn resolve_collision_group(
-        hashes: &[[u8; 32]],
+        ids: &[[u8; 32]],
         initial_indices: &[usize],
         lengths: &mut [usize],
     ) {
@@ -434,7 +391,7 @@ impl ProvenanceMark {
                 std::collections::HashMap::new();
             for &i in &unresolved {
                 sub_groups
-                    .entry(&hashes[i][..prefix_len])
+                    .entry(&ids[i][..prefix_len])
                     .or_default()
                     .push(i);
             }
@@ -454,54 +411,51 @@ impl ProvenanceMark {
             unresolved = next_unresolved;
         }
 
-        // At 32 bytes, truly identical hashes remain — assign 32
+        // At 32 bytes, truly identical IDs remain — assign 32
         for i in unresolved {
             lengths[i] = 32;
         }
     }
 
-    /// Returns disambiguated upper-case ByteWords identifiers for a set of
-    /// marks.
+    /// Returns disambiguated upper-case ByteWords Mark IDs for a set of marks.
     ///
-    /// Non-colliding marks get the standard 4-word identifier. Marks whose
-    /// 4-byte prefixes collide are extended with additional words until each
-    /// identifier in the returned set is unique.
-    pub fn disambiguated_bytewords_identifiers(
+    /// Non-colliding marks get 4-word identifiers. Only marks whose 4-byte
+    /// prefixes collide are extended with additional words.
+    pub fn disambiguated_id_bytewords(
         marks: &[&ProvenanceMark],
         prefix: bool,
     ) -> Vec<String> {
-        let hashes: Vec<[u8; 32]> =
-            marks.iter().map(|m| m.identifier_hash()).collect();
-        let lengths = Self::minimal_noncolliding_prefix_lengths(&hashes);
-        hashes
+        let ids: Vec<[u8; 32]> =
+            marks.iter().map(|m| m.id()).collect();
+        let lengths = Self::minimal_noncolliding_prefix_lengths(&ids);
+        ids
             .iter()
             .zip(lengths)
-            .map(|(hash, len)| {
+            .map(|(id, len)| {
                 let s =
-                    bytewords::encode_to_words(&hash[..len]).to_uppercase();
+                    bytewords::encode_to_words(&id[..len]).to_uppercase();
                 if prefix { format!("🅟 {}", s) } else { s }
             })
             .collect()
     }
 
-    /// Returns disambiguated Bytemoji identifiers for a set of marks.
+    /// Returns disambiguated Bytemoji Mark IDs for a set of marks.
     ///
-    /// Non-colliding marks get the standard 4-emoji identifier. Marks whose
-    /// 4-byte prefixes collide are extended with additional emojis until each
-    /// identifier in the returned set is unique.
-    pub fn disambiguated_bytemoji_identifiers(
+    /// Non-colliding marks get 4-emoji identifiers. Only marks whose 4-byte
+    /// prefixes collide are extended with additional emojis.
+    pub fn disambiguated_id_bytemoji(
         marks: &[&ProvenanceMark],
         prefix: bool,
     ) -> Vec<String> {
-        let hashes: Vec<[u8; 32]> =
-            marks.iter().map(|m| m.identifier_hash()).collect();
-        let lengths = Self::minimal_noncolliding_prefix_lengths(&hashes);
-        hashes
+        let ids: Vec<[u8; 32]> =
+            marks.iter().map(|m| m.id()).collect();
+        let lengths = Self::minimal_noncolliding_prefix_lengths(&ids);
+        ids
             .iter()
             .zip(lengths)
-            .map(|(hash, len)| {
+            .map(|(id, len)| {
                 let s =
-                    bytewords::encode_to_bytemojis(&hash[..len]).to_uppercase();
+                    bytewords::encode_to_bytemojis(&id[..len]).to_uppercase();
                 if prefix { format!("🅟 {}", s) } else { s }
             })
             .collect()
@@ -647,7 +601,7 @@ impl std::fmt::Debug for ProvenanceMark {
 
 impl std::fmt::Display for ProvenanceMark {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ProvenanceMark({})", self.identifier())
+        write!(f, "ProvenanceMark({})", self.id_hex())
     }
 }
 

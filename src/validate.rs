@@ -260,7 +260,7 @@ impl ValidationReport {
                 // Report each mark in the sequence
                 for flagged_mark in seq.marks() {
                     let mark = flagged_mark.mark();
-                    let short_id = mark.identifier();
+                    let short_id = &mark.id_hex()[..8];
                     let seq_num = mark.seq();
 
                     // Build the mark line with annotations

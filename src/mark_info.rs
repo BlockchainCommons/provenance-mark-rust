@@ -66,8 +66,8 @@ impl<'de> Deserialize<'de> for ProvenanceMarkInfo {
 impl ProvenanceMarkInfo {
     pub fn new(mark: ProvenanceMark, comment: impl Into<String>) -> Self {
         let ur = mark.ur();
-        let bytewords = mark.bytewords_identifier(true);
-        let bytemoji = mark.bytemoji_identifier(true);
+        let bytewords = mark.id_bytewords(4, true);
+        let bytemoji = mark.id_bytemoji(4, true);
         let comment = comment.into();
         Self { mark, ur, bytewords, bytemoji, comment }
     }
