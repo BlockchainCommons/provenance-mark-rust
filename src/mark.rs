@@ -369,7 +369,7 @@ impl ProvenanceMark {
         }
 
         // Resolve each collision group
-        for (_, indices) in &groups {
+        for indices in groups.values() {
             if indices.len() <= 1 {
                 continue;
             }

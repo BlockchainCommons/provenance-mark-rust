@@ -24,7 +24,7 @@ dcbor = { version = "^0.25.0", features = ["multithreaded"] }
 bc-rand = "^0.5.0"
 sha2 = "^0.10.6"
 hkdf = "^0.12.3"
-bc-ur = { git = "https://github.com/BlockchainCommons/bc-ur-rust.git" }
+bc-ur = "^0.19.2"
 bc-tags = "^0.12.0"
 bc-envelope = { version = "^0.43.0", optional = true, default-features = false, features = ["known_value", "known-values-directory-loading", "types", "compress"] }
 
