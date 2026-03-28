@@ -277,8 +277,7 @@ fn test_disambiguated_selective_extension() {
     // Now include a duplicate mark (same mark twice) to force collision
     let refs_with_dup: Vec<&ProvenanceMark> =
         vec![&marks[0], &marks[1], &marks[2], &marks[0]];
-    let ids =
-        ProvenanceMark::disambiguated_id_bytewords(&refs_with_dup, false);
+    let ids = ProvenanceMark::disambiguated_id_bytewords(&refs_with_dup, false);
 
     assert_eq!(ids.len(), 4);
 
@@ -294,7 +293,10 @@ fn test_disambiguated_selective_extension() {
     let words3: Vec<&str> = ids[3].split(' ').collect();
     assert_eq!(words0.len(), 32, "identical marks extend to max");
     assert_eq!(words3.len(), 32, "identical marks extend to max");
-    assert_eq!(ids[0], ids[3], "identical marks produce identical identifiers");
+    assert_eq!(
+        ids[0], ids[3],
+        "identical marks produce identical identifiers"
+    );
 }
 
 #[test]
@@ -313,13 +315,10 @@ fn test_disambiguated_all_results_unique_except_identical() {
 #[test]
 fn test_disambiguated_bytemoji_same_prefix_lengths() {
     let marks = make_test_marks(3);
-    let refs: Vec<&ProvenanceMark> =
-        vec![&marks[0], &marks[1], &marks[0]];
+    let refs: Vec<&ProvenanceMark> = vec![&marks[0], &marks[1], &marks[0]];
 
-    let word_ids =
-        ProvenanceMark::disambiguated_id_bytewords(&refs, false);
-    let emoji_ids =
-        ProvenanceMark::disambiguated_id_bytemoji(&refs, false);
+    let word_ids = ProvenanceMark::disambiguated_id_bytewords(&refs, false);
+    let emoji_ids = ProvenanceMark::disambiguated_id_bytemoji(&refs, false);
 
     assert_eq!(word_ids.len(), emoji_ids.len());
 
@@ -342,8 +341,7 @@ fn test_disambiguated_with_prefix() {
 
     let ids_no_prefix =
         ProvenanceMark::disambiguated_id_bytewords(&refs, false);
-    let ids_prefix =
-        ProvenanceMark::disambiguated_id_bytewords(&refs, true);
+    let ids_prefix = ProvenanceMark::disambiguated_id_bytewords(&refs, true);
 
     for (no_pfx, pfx) in ids_no_prefix.iter().zip(ids_prefix.iter()) {
         assert!(pfx.starts_with("🅟 "));

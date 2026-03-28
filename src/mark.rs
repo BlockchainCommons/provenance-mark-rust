@@ -289,25 +289,19 @@ impl ProvenanceMark {
     }
 
     /// The full 32-byte Mark ID as a 64-character hex string.
-    pub fn id_hex(&self) -> String {
-        hex::encode(self.id())
-    }
+    pub fn id_hex(&self) -> String { hex::encode(self.id()) }
 
     /// The first `word_count` bytes of the Mark ID as upper-case ByteWords.
     ///
     /// # Panics
     /// Panics if `word_count` is not in `4..=32`.
-    pub fn id_bytewords(
-        &self,
-        word_count: usize,
-        prefix: bool,
-    ) -> String {
+    pub fn id_bytewords(&self, word_count: usize, prefix: bool) -> String {
         assert!(
             (4..=32).contains(&word_count),
             "word_count must be 4..=32, got {word_count}"
         );
-        let s = bytewords::encode_to_words(&self.id()[..word_count])
-            .to_uppercase();
+        let s =
+            bytewords::encode_to_words(&self.id()[..word_count]).to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
 
@@ -315,18 +309,13 @@ impl ProvenanceMark {
     ///
     /// # Panics
     /// Panics if `word_count` is not in `4..=32`.
-    pub fn id_bytemoji(
-        &self,
-        word_count: usize,
-        prefix: bool,
-    ) -> String {
+    pub fn id_bytemoji(&self, word_count: usize, prefix: bool) -> String {
         assert!(
             (4..=32).contains(&word_count),
             "word_count must be 4..=32, got {word_count}"
         );
-        let s =
-            bytewords::encode_to_bytemojis(&self.id()[..word_count])
-                .to_uppercase();
+        let s = bytewords::encode_to_bytemojis(&self.id()[..word_count])
+            .to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
 
@@ -344,8 +333,9 @@ impl ProvenanceMark {
             (4..=32).contains(&word_count),
             "word_count must be 4..=32, got {word_count}"
         );
-        let s = bytewords::encode_to_minimal_bytewords(&self.id()[..word_count])
-            .to_uppercase();
+        let s =
+            bytewords::encode_to_minimal_bytewords(&self.id()[..word_count])
+                .to_uppercase();
         if prefix { format!("🅟 {}", s) } else { s }
     }
 }
@@ -390,10 +380,7 @@ impl ProvenanceMark {
             let mut sub_groups: std::collections::HashMap<&[u8], Vec<usize>> =
                 std::collections::HashMap::new();
             for &i in &unresolved {
-                sub_groups
-                    .entry(&ids[i][..prefix_len])
-                    .or_default()
-                    .push(i);
+                sub_groups.entry(&ids[i][..prefix_len]).or_default().push(i);
             }
 
             let mut next_unresolved = Vec::new();
@@ -425,15 +412,12 @@ impl ProvenanceMark {
         marks: &[&ProvenanceMark],
         prefix: bool,
     ) -> Vec<String> {
-        let ids: Vec<[u8; 32]> =
-            marks.iter().map(|m| m.id()).collect();
+        let ids: Vec<[u8; 32]> = marks.iter().map(|m| m.id()).collect();
         let lengths = Self::minimal_noncolliding_prefix_lengths(&ids);
-        ids
-            .iter()
+        ids.iter()
             .zip(lengths)
             .map(|(id, len)| {
-                let s =
-                    bytewords::encode_to_words(&id[..len]).to_uppercase();
+                let s = bytewords::encode_to_words(&id[..len]).to_uppercase();
                 if prefix { format!("🅟 {}", s) } else { s }
             })
             .collect()
@@ -447,11 +431,9 @@ impl ProvenanceMark {
         marks: &[&ProvenanceMark],
         prefix: bool,
     ) -> Vec<String> {
-        let ids: Vec<[u8; 32]> =
-            marks.iter().map(|m| m.id()).collect();
+        let ids: Vec<[u8; 32]> = marks.iter().map(|m| m.id()).collect();
         let lengths = Self::minimal_noncolliding_prefix_lengths(&ids);
-        ids
-            .iter()
+        ids.iter()
             .zip(lengths)
             .map(|(id, len)| {
                 let s =
